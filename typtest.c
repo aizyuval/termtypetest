@@ -4,40 +4,51 @@ int main()
 {
 	initscr();			/* Start curses mode 		*/
 	noecho();			/* Don't echo() while we do getch */
-
+	keypad(stdscr, TRUE);
 	char string[99] = "word school thought man mongol horse paper china bottle child directly start mode setting headphone"; //TEMP
 	printw("%s\n", string); //TEMP - should print dynamically?
 
 	int count = 0, mistakes = 0, middleRun = 0, spaces = 0;
-	int getc = getch(); // getting the first keystroke, and timing from there.
 	const long time_out = 15;
+
+	int recvChar = getch(); // getting the first keystroke, and timing from there.
 	long start =time(NULL);	
-	timeout(3000);	
 	while ((time(NULL)-start) < time_out) { 
+		timeout(1000*(time_out - (time(NULL)-start)));	
 		//if backspace, count --; else, check if similar
 		if(middleRun){ 
-			getc = getch();
+			recvChar = getch();
+			if(recvChar == ERR){
+				break;
+			}
 		}else { // we already got the first key stroke.
 			middleRun++;
 
 		}
 
-		//if (getc == KEY_BACKSPACE){
+		//if (recvChar == KEY_BACKSPACE){
 		// change the word/space in location count. This can be applied when I know how to represent char as a variable on the screen
-		if(string[count] == ' ') { // CURRENT CHAR == SPACE. number 32?
-			if(getc != string[count]){ // if he didn't typed space when he needed to, add to mistakes, print it, but do not move to the next word. he will stay in the same location
-				// mistakes++; // only could be implemented when backspace is implemented
-				//printw("%c", getc); // could only be implemented when backspace is implemented
-				continue;
-			}else{
-				printw("%c", getc); // no colors. it's just a space.	
+		if( recvChar == ' ' || string[count] == ' ') { // if he key'd space, or should have;
+			if(recvChar == string[count] && recvChar == ' '){ 
+			// space regularly
+				printw("%c", recvChar); // no colors. it's just a space.	
 				spaces++;
-			}
-		}else {
-			if(getc == string[count]){ // change the underlying process for determining location
-				printw("%c", getc);// paint white
+			}else if (recvChar == ' ' && string[count] != recvChar){
+				// implement when underlying structure is different
+				//spaces++;
+				// tab to the next word, location can be +3 or +2 or +6. add to mistakes the number of chars that is left.
+				continue;// temp
 			}else {
-				printw("%c", getc); // paint red
+				// he didn't space when he should have. add to mistakes.
+				// print the word and don't advance in location(continue). wait for him to type space.
+				// implement when backspace is available
+				continue;//temp
+			}
+		}else  {
+			if(recvChar == string[count]){ // change the underlying process for determining location
+				printw("%c", recvChar);// paint white
+			}else {
+				printw("%c", recvChar); // paint red
 				mistakes++;
 
 			}
@@ -53,8 +64,10 @@ int main()
 		printw("\n you have 100%% accuracy, and raw wpm of: %d", ((count-mistakes)/5)*(60/(int)time_out)); 
 	}
 	printw("\nYou had, %d mistakes", mistakes);	
+
 	refresh(); 
 	getch();
 	endwin();
+
 	return 0;
 }
