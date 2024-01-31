@@ -1,10 +1,20 @@
 #include <ncurses.h>
 #include <time.h>
+
+//#define COLOR_TEXTF 1 //256
+#define COLOR_BACKGROUND 257//257
+
 int main()
 {
 	initscr();			/* Start curses mode 		*/
 	noecho();			/* Don't echo() while we do getch */
 	keypad(stdscr, TRUE);
+	use_default_colors(); // use default background and foregrounds when inititalizing -> start_color(). Instead of using color 0;
+	start_color();			//Start color
+	
+	init_pair(1,COLOR_RED, -1); // use red and nothing(-1)
+	attron(COLOR_PAIR(1));
+	
 	char string[99] = "word school thought man mongol horse paper china bottle child directly start mode setting headphone"; //TEMP
 	printw("%s\n", string); //TEMP - should print dynamically?
 
