@@ -49,51 +49,17 @@ int main()
 		
 		initializer_ll->length = (char)strlen(initializer_ll->string);
 		initializer_ll->overword = 0;
-		initializer_ll->prev_word = malloc(_word_size);
 		initializer_ll->next_word = malloc(_word_size);
+		initializer_ll->next_word->prev_word = initializer_ll;// the next_word's prev_word is this pointer
 		i++;
 	}
 
-	// when printing a dynamic_ll->string. printw("%s "); -> space is very important
-// print strings
-	//
-	//new variables: char relCurser, spaces, 
-	// start while loop, 
-	// compare recvChar with ->dynamic_ll->string[relCursor]
-	//
-	// relCurser is used for comparison of the current char[relCurser] with recvChar. when he backspaces, it becomes relCurser --; when he backspaces a space, it becomes l->length (ast elemnt of dynamic_ll->string); when he spaces, it becomes 0;
-	// relCurser is also a representation of the completed chars. it ++'s with ever addch.
-	//
-	//
-	//when he backspaces:
-	//if relcursor=0:
-	//space--, linked_list = linked_list->prev_word;
-	//relcursor= l->overword + l->length
-	// mvaddch, move one back 
-	// 
-	//if relcursor > l->length
-	// he backspaces an overworded
-	// delch
-	//  l->overword--;
-	//  relCursor--;
-	// 
-	// else // the curser is inside the word
-	// relCursor--;
-	// mvaddch 
-	// moveone abck
-	//
 	//WHAT IF HE BACKSPACES THE FIRST CHAR?
-	//
-	//
-	// current global curser is: get(stdscr, row, col)
-	// current global curser is: enumeration over linked_list lengths plus spaces
-
-	// if l->correct != length then word is incorrect
-	// else its all correct and word is complete
 	//  make sure everything is continued
 
 
-	int middleRun = 0, spaces = 0, row = 0, col = 0;
+	float spaces = 0;
+	int middleRun = 0, row = 0, col = 0;
 	char relCursor = 0;
 	move(0, 0); // move the cursor to where the first char of the dynamic_ll->string is printed //TEMP
 	const long time_out = 15;
@@ -102,7 +68,6 @@ int main()
 	long start =time(NULL);	
 	while ((time(NULL)-start) < time_out) { 
 		timeout(1000*(time_out - (time(NULL)-start)));	
-		//if backspace, relCursor --; else, check if similar
 		if(middleRun){ 
 			recvChar = getch();
 			if(recvChar == ERR){
@@ -216,16 +181,21 @@ int main()
 		if(correctWord){
 			correctWordChars+= printed_ll->length;
 		}
+		
 		//add spaces
 
 	}
+
 	// calculations: raw wpm, wpm, accuracy.
 	// raw wpm:	all chars/5 * 60/time_out
 	// wpm: all chars in entire correct words/5 * 60/time_out
 	// accuracy: correct chars/all chars * 100
 	// attention to floats or so
-	printw("wpm: %f, raw wpm: %f, accuracy: %f", (correctWordChars/5.0)*(60.0/((float)time_out)), (charAmount/5)*(60/((float)time_out)), (corrects/charAmount)*100);
-	printw("\ncalcs-> correctWordChars: %f, charAmount: %f, amount of corrects: %f", correctWordChars, charAmount, corrects);
+	charAmount += spaces;
+	corrects +=spaces;
+	correctWordChars +=spaces;
+	printw("wpm: %f, raw wpm: %f, accuracy: %f", ((correctWordChars)/5.0)*(60.0/((float)time_out)), (charAmount/5)*(60/((float)time_out)), (corrects/charAmount)*100);
+	printw("\ncalcs-> correct chars in full words + spaces: %f, charAmount: %f,  corrects total: %f, spaces: %f", correctWordChars, charAmount, corrects, spaces);
 	refresh(); 
 	getch(); // only leave the system if  he c-c, or other known key
 endwin();
