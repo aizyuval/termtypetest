@@ -52,7 +52,6 @@ int main()
 		initializer_ll->prev_word = malloc(_word_size);
 		initializer_ll->next_word = malloc(_word_size);
 		i++;
-		// later when enumerating for print, i can simply do while dynamic_ll->string!=NULL. it will be in the last linked element, that has allocated space but has no values.
 	}
 
 	// when printing a dynamic_ll->string. printw("%s "); -> space is very important
@@ -202,12 +201,13 @@ int main()
 	float charAmount = 0;
 	bool correctWord;
 	float correctWordChars = 0;
-	for( ;printed_ll!=dynamic_ll; printed_ll=printed_ll->next_word){
+	for( ;printed_ll!=dynamic_ll->next_word; printed_ll=printed_ll->next_word){// stop enumeration when getting to word after the last
 		correctWord = true;	
 		for (int i =0; i<printed_ll->length; i++) {
+			
 			if (printed_ll->ver_arr[i] ==1){
 				corrects++;
-			}else if (printed_ll->ver_arr[i] ==0){
+			}else{
 				mistakes++;
 				correctWord = false;
 			}
@@ -216,14 +216,16 @@ int main()
 		if(correctWord){
 			correctWordChars+= printed_ll->length;
 		}
+		//add spaces
 
 	}
 	// calculations: raw wpm, wpm, accuracy.
 	// raw wpm:	all chars/5 * 60/time_out
-	// wpm: all chars in correct words/5 * 60/time_out
+	// wpm: all chars in entire correct words/5 * 60/time_out
 	// accuracy: correct chars/all chars * 100
 	// attention to floats or so
 	printw("wpm: %f, raw wpm: %f, accuracy: %f", (correctWordChars/5.0)*(60.0/((float)time_out)), (charAmount/5)*(60/((float)time_out)), (corrects/charAmount)*100);
+	printw("\ncalcs-> correctWordChars: %f, charAmount: %f, amount of corrects: %f", correctWordChars, charAmount, corrects);
 	refresh(); 
 	getch(); // only leave the system if  he c-c, or other known key
 endwin();
