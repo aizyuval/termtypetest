@@ -80,24 +80,7 @@ int main()
 
 		// change the word/space in location relCursor. This can be applied when I know how to represent char as a variable on the screen
 		if (recvChar == KEY_BACKSPACE){
-			// what if he backspaces a ' ' -> space?
-	//when he backspaces:
-	//if relcursor=0:
-	//space--, linked_list = linked_list->prev_word;
-	//relcursor= l->overword + l->length
-	// mvaddch, move one back 
-	// 
-	//if relcursor > l->length
-	// he backspaces an overworded
-	// delch
-	//  l->overword--;
-	//  relCursor--;
-	// 
-	// else // the curser is inside the word
-	// relCursor--;
-	// mvaddch 
 			// ALSO: if backspace and the word is not finished, go to where it didn't finish
-			// moveone abck
 			getyx(stdscr, row, col);
 			if(relCursor==0){
 				// he backspaces a space
