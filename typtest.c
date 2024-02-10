@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <wchar.h>
 
 #define KEY_SPACE 32 
 #define MISTAKEN_CHAR 0
@@ -38,6 +39,7 @@ WINDOW *create_statswin();
 void destroy_win(WINDOW *local_win);
 
 void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_x, int in_y, int nextl_location);
+void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,char **strings, int in_x);
 int main()
 {
 	initscr();			/* Start curses mode 		*/
@@ -91,6 +93,74 @@ WINDOW *create_statswin(){
 	return statswin;
 }
 // also wrap_delch! 
+void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,char **strings, int in_x){
+
+	int next_word_length = 1; // + 1 for the space we are not going to count
+	// if line!=2
+	wdelch(win);
+	existing_space[line_number]++;
+	// now check if there's enough spacesto wrap
+	if (line_number==2) {
+		next_word_length += strlen(strings[(*awaiting_words)]);
+		if(existing_space[line_number]>=next_word_length){
+			//there's enough room for awaiting word. write it, then go back.
+			wmove(win,line_number,  text_line_length-existing_space[line_number]);
+			wprintw(win, "%s ", strings[(*awaiting_words)]);
+			existing_space[line_number] -= next_word_length;
+			(*awaiting_words)++;
+			wmove(win, line_number, in_x);
+		}
+		else{
+			//break;
+		}
+	}else{
+		wmove(win,line_number+1,0);
+		for(int x = 1; winch(win)!= ' '; x++)
+		{
+			next_word_length++;
+			wmove(win, line_number+1, x);
+		}
+
+		int char_holder0;
+
+		if (existing_space[line_number]<next_word_length) {
+			//printw("next_word_length wont fit.\n");
+			wmove(win, line_number, in_x);
+			//break
+
+		}else {
+
+			//printw("trying to fit word!.\n");
+			while (true) {
+
+				wmove(win,line_number+1,0);
+				char_holder0 = winch(win);
+
+				wrap_delch(win, existing_space, line_number+1, text_line_length, awaiting_words, strings, 0);
+
+				wmove(win,line_number,  text_line_length-existing_space[line_number]);
+
+				waddch(win, char_holder0);
+				existing_space[line_number]--;
+
+				if (char_holder0 == ' ') {
+					wmove(win, line_number, in_x); // move back
+					break;
+
+				}
+			}
+
+
+			
+		}
+	}
+}
+		
+// check if space <nextline word+1
+// else if line 2 restore
+// else move it up
+
+
 
 void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_y, int in_x, int nextl_location){
 	int text_line_index = text_line_length-1; 
@@ -111,11 +181,10 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 				getyx(win, y, x);
 				wdelch(win);//can cause problems
 				wmove(win, line_number, x-1);
-				printw("|ln2, dlt: %c;|", winch(win));
 				existing_space[line_number]++;
 			}while((winch(win))!=KEY_SPACE);
 
-			(*awaiting_words)++;
+			(*awaiting_words)--; // awaiting words is the previous one
 
 
 			mvwinsch(win, in_y, in_x, recvChar);
@@ -172,7 +241,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 	wmove(textWin, 0, 0);
 
-	char * strings[] = {"word", "school", "thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode", "setting", "headphone","thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode", "setting", "headphone","thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode"}; //TEMP
+	char * strings[] = {"word", "school", "thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode", "setting", "headphone","thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode", "setting", "headphone","thought", "man", "mongol", "horse", "paper", "china", "bottle", "child", "directly", "start", "mode", "hello", "await", "words", "incredible"}; //TEMP
 
 	size_t wordAmount = sizeof(strings)/sizeof(const char *);// temp, will be in data file
 	unsigned char line_number = 0;
@@ -298,7 +367,9 @@ struct _test_result spawn_test(WINDOW *testwin){
 				wmove(textWin,row, col-1);
 			}else{//backspace when on overword
 				dynamic_ll->overword -= 1;
-				mvwdelch(textWin,row, col-1);
+				wmove(textWin, row, col-1);
+				wrap_delch(textWin, existing_space, line_number, text_line_length, awaiting_words, strings, col-1);
+				//mvwdelch(textWin,row, col-1);
 				relCursor--;
 			}
 
@@ -306,7 +377,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 		else if(recvChar == ' '){
 			// if next_word->dynamic_ll->string is null, he is a god and finished everthing(what about mistakes?)
-
+// drop line when there's space in the end
 
 			if (relCursor<dynamic_ll->length){//he spaces in the middle of the word
 				memset((dynamic_ll->ver_arr + relCursor), NONTYPED_CHAR, (dynamic_ll->length - relCursor)); // tab to the next word, non-type next chars.
@@ -316,7 +387,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 
 			getyx(textWin, row, col);
-			if(col== (text_line_length-existing_space[line_number])){// if he is on the last space, move to next line
+			if(col== (text_line_length-1-existing_space[line_number])){// if he is on the last space, move to next line
 				wmove(textWin,row+1,0);
 				line_number++;
 			}else{
@@ -329,8 +400,10 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 		else if (relCursor >= dynamic_ll->length){//overwording 
 			getyx(textWin, row, col);
-			if(dynamic_ll->overword ==8){
+			if(col== (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==8){
+
 				// if he is overwording by 8, stop insch'ing
+				// if he is at the end of the line, don't allow overword
 				continue;
 			}
 			wrap_insch(textWin, existing_space, line_number, text_line_length, awaiting_words, recvChar, row, col, 0);
