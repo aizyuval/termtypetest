@@ -38,8 +38,11 @@ WINDOW *create_statswin();
 
 void destroy_win(WINDOW *local_win);
 
-void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_x, int in_y, int nextl_location);
+void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_x, int in_y);
 void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,char **strings, int in_x);
+
+
+long numDig(long number);
 int main()
 {
 	initscr();			/* Start curses mode 		*/
@@ -64,6 +67,14 @@ endwin();
 	return 0;
 }
 
+long numDig(long number){
+	if(number<10) return 1;
+	if(number<100) return 2;
+	if(number<1000) return 3;
+	if(number<10000) return 4;
+	else return 0;
+}
+
 WINDOW *create_testwin(){
 
 	int height = LINES/2;
@@ -72,7 +83,7 @@ WINDOW *create_testwin(){
 	int textstartx = (COLS - width) /2;
 	WINDOW *testwin = newwin(height, width, textstarty, textstartx);
 	keypad(testwin, TRUE);
-	box(testwin, 0, 0);
+	//box(testwin, 0, 0);
 
 	wrefresh(testwin);
 
@@ -162,7 +173,7 @@ void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_li
 
 
 
-void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_y, int in_x, int nextl_location){
+void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_y, int in_x){
 	int text_line_index = text_line_length-1; 
 	int y,x;	
 	bool done = false;
@@ -210,9 +221,8 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 				text_line_index--;
 				existing_space[line_number]++; 
 				wmove(win, line_number+1, 0); 
-				wrap_insch(win, existing_space, line_number+1, text_line_length, awaiting_words, charholder_0, line_number+1, nextl_location, 0);
+				wrap_insch(win, existing_space, line_number+1, text_line_length, awaiting_words, charholder_0, line_number+1, 0);
 
-				//nextl_location++; // no need. always go to 0, and push everything to the right except last stroke where moving ' '
 				if(charholder_0 == ' '){ 
 					space_occ=true;
 				}
@@ -300,31 +310,88 @@ struct _test_result spawn_test(WINDOW *testwin){
 	float spaces = 0;
 	int middleRun = 0, row = 0, col = 0;
 	unsigned char relCursor = 0;
-	long time_out = 15;
+
+	long time_out[] = {15,30,60,120};
+	long time_out_num = 15;
+	unsigned char timeopts = 4;
+	unsigned char time_cyc = 0;
 
 
+	wmove(testwin, 0, 0);
+	wprintw(testwin, "%lu [Backspace]", time_out_num);
 
-
+	touchwin(testwin);
+	wrefresh(testwin);
+	wrefresh(textWin);
 	int recvChar = getch(); // getting the first keystroke, and timing from there.
-	if(recvChar == KEY_BACKSPACE || recvChar == ' '){ // add: for other types.
-		while (recvChar == KEY_BACKSPACE || recvChar == ' ')
-		{
-			recvChar = getch();
+	while (recvChar == KEY_BACKSPACE || recvChar == ' ')
+	{
+		if(recvChar==KEY_BACKSPACE){
+			// cycling between time opts
+			time_cyc+=1;
+			if(time_cyc==timeopts){
+				time_cyc=0;
+			}
+
+			if(numDig(time_out_num) > numDig(time_out[time_cyc])){// if previous num is bigger
+				wmove(testwin, 0, numDig(time_out_num)-1);
+				for(int i=0; i< (numDig(time_out_num) - numDig(time_out[time_cyc])); i++){// delete the amount of spaces needed to cover the difference
+					wdelch(testwin);
+				}
+
+			}else if(numDig(time_out_num) < numDig(time_out[time_cyc])){ // if old number is smaller
+				wmove(testwin, 0, numDig(time_out[time_cyc])-1);
+				for(int i=0; i< (numDig(time_out[time_cyc])-numDig(time_out_num)); i++){// insert the amount of spaces needed to cover the difference
+					winsch(testwin,' ');
+				}
+			}
+			time_out_num = time_out[time_cyc];
+
+			wmove(testwin, 0, 0);
+			wprintw(testwin, "%lu", time_out_num);
+			touchwin(testwin);
+			wrefresh(testwin);
+			wrefresh(textWin);
+
 		}
+		recvChar = getch();
 	}
 
 
-
+	wmove(testwin, 0, numDig(time_out_num)+1);
+	for (long i = 0; i<(long)strlen("[Backspace]");i++) { //delete backspace from view
+	wdelch(testwin);	
+	}
+	wrefresh(testwin);
 
 	long start =time(NULL);	
-	while ((time(NULL)-start) < time_out) { 
-		timeout(1000*(time_out - (time(NULL)-start)));	// relative timeout
+	int time_remaining = (int)time_out_num;
+
+	// if time < 100. make sure no 3 char.
+	// if time < 10. make sure no 2 char.
+			timeout(1001);
+	while ((time(NULL)-start) < time_out_num) { 
+	time_remaining = time_out_num - (time(NULL)-start);
+		//timeout(1000*(time_remaining));	// relative timeout
+
+		wmove(testwin, 0, numDig(time_remaining));
+
+			if(winch(testwin)!=' '){
+				wdelch(testwin);
+			}
+		
+		wmove(testwin, 0, 0);
+		wprintw(testwin, "%d", time_remaining);
+		touchwin(testwin);
+		wrefresh(testwin);
+		wrefresh(textWin);
+
 		getyx(textWin, row, col);
 		// if he is in the end of the line:
 		if(middleRun){ 
 			recvChar = getch();
 			if(recvChar == ERR){
-				break;
+				continue;
 			}
 		}else { // we already got the first key stroke.
 			middleRun++;
@@ -400,13 +467,12 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 		else if (relCursor >= dynamic_ll->length){//overwording 
 			getyx(textWin, row, col);
-			if(col== (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==8){
-
+			if(col == (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==8){
 				// if he is overwording by 8, stop insch'ing
 				// if he is at the end of the line, don't allow overword
 				continue;
 			}
-			wrap_insch(textWin, existing_space, line_number, text_line_length, awaiting_words, recvChar, row, col, 0);
+			wrap_insch(textWin, existing_space, line_number, text_line_length, awaiting_words, recvChar, row, col);
 			wchgat(textWin,1, COLOR_PAIR(RED), RED,NULL);
 
 			wmove(textWin,row,col+1);	
@@ -425,6 +491,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 			relCursor++;
 
 		}
+		wrefresh(testwin);
 		touchwin(testwin);
 		wrefresh(textWin);
 	}
@@ -473,7 +540,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 	// corrects: all correct chars + spaces 
 	// acc: all corrects / all chars
 
-	wprintw(testwin,"wpm: %f, raw wpm: %f, accuracy: %f", ((correctWordChars)/5.0)*(60.0/((float)time_out)), (charAmount/5)*(60/((float)time_out)), (corrects/charAmount)*100);
+	wprintw(testwin,"wpm: %f, raw wpm: %f, accuracy: %f", ((correctWordChars)/5.0)*(60.0/((float)time_out_num)), (charAmount/5)*(60/((float)time_out_num)), (corrects/charAmount)*100);
 	wprintw(testwin,"\ncalcs-> correct chars in full words + spaces: %f, charAmount: %f,  corrects total: %f, spaces: %f", correctWordChars, charAmount, corrects, spaces);
 
 	wrefresh(testwin);
