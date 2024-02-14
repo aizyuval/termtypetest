@@ -8,6 +8,8 @@
 #include <time.h>
 #include <wchar.h>
 
+#define KEY_BACKTICK 59
+#define KEY_TAB 9
 #define KEY_SPACE 32 
 #define MISTAKEN_CHAR 0
 #define CORRECT_CHAR 1
@@ -42,24 +44,29 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 WINDOW *create_statswin();
 //void spawn_stats(WINDOW * statswin);
 
+
 void destroy_win(WINDOW *local_win);
 
 void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_x, int in_y);
 void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,struct _strings * strings, int in_x);
 
-void start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
 
-struct _strings * restart_text(struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
+struct _strings * start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
+
+struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
 
 
 long numDig(long number);
 void shuffle(char* names[], size_t n);
 
+
+
+
 int main()
 {
 	initscr();			/* Start curses mode 		*/
 	keypad(stdscr, TRUE);
-noecho();			/* Don't echo() while we do getch */
+	noecho();			/* Don't echo() while we do getch */
 	use_default_colors();           // use default background and foregrounds 
 	start_color();			//Start color
 	init_pair(RED,COLOR_RED, -1); 
@@ -77,7 +84,7 @@ noecho();			/* Don't echo() while we do getch */
 	//spawn_stats(statswin);
 
 	getch();
-endwin();
+	endwin();
 	return 0;
 }
 
@@ -86,25 +93,25 @@ long numDig(long number){
 	if(number<100) return 2;
 	if(number<1000) return 3;
 	if(number<10000) return 4;
-	else return 0;
+		else return 0;
 }
 void shuffle(char* names[], size_t n) {
-  for (size_t i = 0; i < n;) {
-    size_t j = i + rand() % (n - i);
-    /* Reject this shuffle if the element we're about to place
+	for (size_t i = 0; i < n;) {
+		size_t j = i + rand() % (n - i);
+		/* Reject this shuffle if the element we're about to place
      * is the same as the previous one
      */
-    if (i > 0 && strcmp(names[j], names[i-1]) == 0)
-      i = 0;
-    else {
-      /* Otherwise, place element i and move to the next one*/
-      char* t = names[i];
-      names[i] = names[j];
-      names[j] = t;
-      ++i;
-    }
+		if (i > 0 && strcmp(names[j], names[i-1]) == 0)
+			i = 0;
+		else {
+			/* Otherwise, place element i and move to the next one*/
+			char* t = names[i];
+			names[i] = names[j];
+			names[j] = t;
+			++i;
+		}
 
-  }
+	}
 
 }
 struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, WINDOW * textWin, unsigned int * awaiting_words){
@@ -144,9 +151,8 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 }
 
 
-void start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
-	// change all the variables as pointers to ensure usage after calling the function
-	while ((*recvChar) == KEY_BACKSPACE || (*recvChar) == ' ') // or esc / Tab
+struct _strings * start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
+	while ((*recvChar) == KEY_BACKSPACE || (*recvChar) == ' '|| (*recvChar) == KEY_TAB || (*recvChar) == KEY_BACKTICK) // or esc / Tab
 	{
 		if((*recvChar)==KEY_BACKSPACE){
 			// cycling between time opts
@@ -163,7 +169,7 @@ void start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * tim
 
 			}else if(numDig((*time_out_num)) < numDig(time_out[(*time_cyc)])){ // if old number is smaller
 				for(int i=0; i< (numDig(time_out[(*time_cyc)])-numDig((*time_out_num))); i++){// insert the amount of spaces needed to cover the difference
-					
+
 					wmove(timeWin, 0, numDig(time_out[(*time_cyc)])-1);
 					winsch(timeWin,' ');
 				}
@@ -195,7 +201,7 @@ void start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * tim
 				}
 			}else if(lang_diff<0){
 				// If last language is shorter than new one -> insch the difference
-			lang_diff = abs(lang_diff);
+				lang_diff = abs(lang_diff);
 				while (lang_diff>0) {
 					winsch(langWin, ' ');
 					lang_diff--;
@@ -205,39 +211,46 @@ void start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopts, long * tim
 			wprintw(langWin,"%s", languages[(*lang_cyc)]);
 
 
-			strings = restart_text(printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*time_cyc)], config, top_schema);
-			
-			printw("\nAFTER, does STRINGS js, ? ptr: %p", strings);
-			// if ptr is not the same, this function need to return strings.
+			strings = restart_text(timeWin, langWin,(*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*time_cyc)], config, top_schema); // update strings after freeing it!
+		}else if((*recvChar) == KEY_TAB){
+			//tab = restart text
+			//printw("segmentation fault is not prob in keys! ");
+			strings = restart_text(timeWin, langWin, (*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*time_cyc)], config, top_schema);
+		}else if ((*recvChar) == KEY_BACKTICK) {
+
+			// spawn stats win. destroy textwin.
 		}
 
-			touchwin(testwin);
-			wrefresh(testwin);
-			wrefresh(textWin);
+		touchwin(testwin);
+		wrefresh(testwin);
+		wrefresh(textWin);
 		(*recvChar) = getch();
 	}
 
+	return strings;
 
 }
 
 
 
-struct _strings * restart_text(struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
-
-		// clear textWin, free pointer allocations, zero all pointers, reload file onto the same variable? (how to free in cyaml), shuffle, save file, do init_text
+struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
+	//unsigned start_test_loop(int recvChar, int * spaces, int textstarty, int textstartx, long time_out_num, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int wordAmount, int line_number, int * existing_space, int text_line_length, int awaiting_words, char ** languages, cyaml_config_t * config, cyaml_schema_value_t * top_schema){
+	// clear textWin, free pointer allocations, zero all pointers, reload file onto the same variable? (how to free in cyaml), shuffle, save file, do init_text
+	// erase windows, re-print
 	werase(textWin);
 
-	printw("does strings pointer changes, so i need to return a new one? ptr: %p", strings);
+
 	struct _word * tmp = linked_ll;
 	struct _word * linked_ll_initial = linked_ll; // through the free loop, linked_ll will become the last linked_ll element. linked_ll_initial preserves the starting point.
+	// linked_ll initial should be the same as the general printed_ll; if not -> meaning i'm modifying what printed_ll points to
 	for(size_t i=0; i<(*wordAmount);i++){// move through all structs and free all of them and their components
 		tmp = linked_ll;
 		linked_ll = linked_ll->next_word;
 		free(tmp->string);
 		free(tmp->ver_arr);
 		if(i!=0){
-		free(tmp);
-	}
+			free(tmp);
+		}
 	}
 
 	cyaml_err_t err = cyaml_free(config, top_schema, strings, 0);
@@ -256,9 +269,9 @@ struct _strings * restart_text(struct _word * linked_ll, unsigned int * wordAmou
 	memcpy(file, dir, strlen(dir)); // languages/
 	strcat(file, lang); // languages/english200
 	strcat(file, ext); // languages/english200.yaml
-	
+
 	err = cyaml_load_file(file, config,
-				   top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
+		       top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
 	if(err !=CYAML_OK){
 		wprintw(stdscr, "error! cannot reload file");
 		getch();
@@ -383,11 +396,11 @@ void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_li
 			}
 
 
-			
+
 		}
 	}
 }
-		
+
 // check if space <nextline word+1
 // else if line 2 restore
 // else move it up
@@ -455,148 +468,32 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 }
 
 
+unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float * spaces, int textstarty, int textstartx, long time_out_num, unsigned time_cyc, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int * wordAmount, int line_number, int * existing_space, int text_line_length, unsigned int * awaiting_words, char ** languages, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema, struct _word ** dynamic_ll_ptr){
 
 
 
+	werase(timeWin);
+	wprintw(timeWin, "%lu", time_out_num);
+	werase(langWin);
+	//wprintw(langWin, "%s", languages[time_cyc]);
 
-
-
-struct _test_result spawn_test(WINDOW *testwin){
-	// destroy other wins.
-	int height = LINES/2;
-	int width = COLS/1.5;
-	int textstarty = height/3;
-	int textstartx = width/8;
-	wmove(testwin, textstarty, textstartx);// 0,0 of textwin
-	int text_line_length = width*0.75;
-
-	int switches_length = 20;
-
-	WINDOW *textWin = derwin(testwin,3, text_line_length, textstarty-1, textstartx-1);// create a newwin inside the current one for better positioning and wrapping
-	WINDOW *timeWin = derwin(testwin,1, switches_length, 0, 0);// create a newwin inside the current one for better positioning and wrapping
-	WINDOW *langWin = derwin(testwin,1, switches_length, 0, 35);// create a newwin inside the current one for better positioning and wrapping
-	WINDOW *restartWin = derwin(testwin,1, switches_length, textstarty+7, (textstartx-1) + (text_line_length)/2- (switches_length)/2);// create a newwin inside the current one for better positioning and wrapping
-	WINDOW *togglesetWin = derwin(testwin,1, switches_length, textstarty+8,  (textstartx-1) + (text_line_length)/2- (switches_length)/2);// create a newwin inside the current one for better positioning and wrapping
-	box(timeWin,0,0);box(langWin,0,0);box(restartWin,0,0);box(togglesetWin,0,0);
-	touchwin(testwin);
-	wrefresh(testwin);
-	wmove(textWin, 0, 0);
-
-
-	// INITIALIZE words from file, shuffle them.
-	static const cyaml_schema_value_t word_entry = {
-		CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
-	};
-	static const cyaml_schema_field_t top_mapping_scheme[] = { 
-		CYAML_FIELD_SEQUENCE("words", CYAML_FLAG_POINTER, struct _strings, words_member,  &word_entry, 0, CYAML_UNLIMITED),// cyaml unlimited specifies size. can be 200, 1000.
-		CYAML_FIELD_END
-	};
-
-	static const cyaml_schema_value_t top_schema = {
-		CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct _strings, top_mapping_scheme),
-		      };
-
-
-	struct _strings *strings; // every strings is strings->words_member[n]
-	
-	static const cyaml_config_t config = {
-		.log_fn = cyaml_log,
-		.mem_fn = cyaml_mem,
-		.log_level = CYAML_LOG_WARNING,
-	};
-
-	//char * defaultfile = "languages/english200.yaml";
-	cyaml_err_t err = cyaml_load_file("languages/english200.yaml", &config,
-				   &top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
-
-	shuffle(strings->words_member, strings->words_member_count);
-	cyaml_save_file("languages/english200.yaml", &config, &top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
-	
-
-
-	
-	unsigned int * wordAmount = malloc(sizeof(unsigned int));
-	(*wordAmount) = strings->words_member_count;
-
-	//size_t wordAmount = sizeof(strings)/sizeof(const char *);// temp, will be in data file
-	unsigned char line_number = 0;
-	int existing_space[3] = {text_line_length,text_line_length,text_line_length}; 
-
-	unsigned int val=0;
-	unsigned int * awaiting_words = &val;
-
-	// 3 linked lists that point to the same place, but are used in different place.
-	struct _word *initializer_ll, *dynamic_ll, *printed_ll;
-
-	initializer_ll = malloc(_word_size);
-	dynamic_ll = initializer_ll;
-	printed_ll = initializer_ll;
-
-	init_text(initializer_ll, wordAmount, strings, line_number, existing_space, textWin, awaiting_words); // initialize linked list, and print words on screen.
-
-	touchwin(testwin);
-	wrefresh(testwin);
-	wrefresh(textWin);
-
-
-	float spaces = 0;
+	// 1 for success 
+	// 0 for stop
+	long start =time(NULL);	
+	int time_remaining = (int)time_out_num;
 	int middleRun = 0, row = 0, col = 0;
 	unsigned char relCursor = 0;
 
-	long time_out[] = {15,30,60,120};
-	long time_out_num = 15;
-	unsigned timeopts = 4;
-	unsigned time_cyc = 0;
-
-	char ** languages;
-	unsigned lang_cyc = 0;
-	unsigned old_lang_cyc = 0;
-	unsigned lang_amount = 2;
-	signed lang_diff = 0;
-	languages = malloc(lang_amount*sizeof(char*));
-	for (unsigned i = 0; i<lang_amount; i++) {
-		languages[i]=malloc(sizeof(char*));
-	}
-
-	
-	// possible: enumarte over all language files, then init languages with them.
-	strcpy(languages[0], "english200");
-	strcpy(languages[1], "english1000");
-
-	wprintw(timeWin, "%lu [Backspace]", time_out_num);
-	wprintw(langWin, "%s [Space]", languages[0]);
-	wprintw(restartWin, "restart [Tab]");
-	wprintw(togglesetWin, "stats [Esc]");
-
-	touchwin(testwin); // only touching the father-window and then refreshing it to update all. then refreshing textWin to put the cursor back there.
-	wrefresh(testwin);
-	wrefresh(textWin);
-
-	int recvChar = getch(); // getting the first keystroke, and timing from there.
-	
-	start_keys(&recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,&config, &top_schema);
-
-//delete backspace from view
-	wmove(testwin, 0, numDig(time_out_num)+1);
-	for (long i = 0; i<(long)strlen("[Backspace]");i++) { 
-	wdelch(testwin);	
-	}
-	wrefresh(testwin);
-
-	long start =time(NULL);	
-	int time_remaining = (int)time_out_num;
-
-			timeout(1001);
+	timeout(1001);
 	while ((time(NULL)-start) < time_out_num) { 
-	time_remaining = time_out_num - (time(NULL)-start);
+		time_remaining = time_out_num - (time(NULL)-start);
 		//timeout(1000*(time_remaining));	// relative timeout
 
 		wmove(testwin, 0, numDig(time_remaining));
+		if(winch(testwin)!=' '){// if there's a number that shouldn't be there (from previous time counter) delch it.
+			wdelch(testwin);
+		}
 
-			if(winch(testwin)!=' '){
-				wdelch(testwin);
-			}
-		
 		wmove(testwin, 0, 0);
 		wprintw(testwin, "%d", time_remaining);
 		touchwin(testwin);
@@ -615,6 +512,11 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 		}
 
+		if (recvChar == KEY_TAB) {
+			// stop this test. return 0;
+			timeout(-1);// cancel timeout as the test has stopped.
+			return 0;
+		}
 
 		if (recvChar == KEY_BACKSPACE){ 
 
@@ -661,7 +563,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 		else if(recvChar == ' '){
 			// if next_word->dynamic_ll->string is null, he is a god and finished everthing(what about mistakes?)
-// drop line when there's space in the end
+			// drop line when there's space in the end
 
 			if (relCursor<dynamic_ll->length){//he spaces in the middle of the word
 				memset((dynamic_ll->ver_arr + relCursor), NONTYPED_CHAR, (dynamic_ll->length - relCursor)); // tab to the next word, non-type next chars.
@@ -714,6 +616,157 @@ struct _test_result spawn_test(WINDOW *testwin){
 	}
 
 
+	(*dynamic_ll_ptr) = dynamic_ll; // update dynamic_ll after function usage. 
+	return 1;
+}
+
+
+
+
+
+
+
+struct _test_result spawn_test(WINDOW *testwin){
+	// destroy other wins.
+
+	int height = LINES/2;
+	int width = COLS/1.5;
+	int textstarty = height/3;
+	int textstartx = width/8;
+	wmove(testwin, textstarty, textstartx);// 0,0 of textwin
+	int text_line_length = width*0.75;
+
+	int switches_length = 20;
+
+	WINDOW *textWin = derwin(testwin,3, text_line_length, textstarty-1, textstartx-1);// create a newwin inside the current one for better positioning and wrapping
+	WINDOW *timeWin = derwin(testwin,1, switches_length, 0, 0);// create a newwin inside the current one for better positioning and wrapping
+	WINDOW *langWin = derwin(testwin,1, switches_length, 0, 35);// create a newwin inside the current one for better positioning and wrapping
+	WINDOW *restartWin = derwin(testwin,1, switches_length, textstarty+7, (textstartx-1) + (text_line_length)/2- (switches_length)/2);// create a newwin inside the current one for better positioning and wrapping
+	WINDOW *togglesetWin = derwin(testwin,1, switches_length, textstarty+8,  (textstartx-1) + (text_line_length)/2- (switches_length)/2);// create a newwin inside the current one for better positioning and wrapping
+	box(timeWin,0,0);box(langWin,0,0);box(restartWin,0,0);box(togglesetWin,0,0);
+	touchwin(testwin);
+	wrefresh(testwin);
+	wmove(textWin, 0, 0);
+
+
+	// INITIALIZE words from file, shuffle them.
+	static const cyaml_schema_value_t word_entry = {
+		CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
+	};
+	static const cyaml_schema_field_t top_mapping_scheme[] = { 
+		CYAML_FIELD_SEQUENCE("words", CYAML_FLAG_POINTER, struct _strings, words_member,  &word_entry, 0, CYAML_UNLIMITED),// cyaml unlimited specifies size. can be 200, 1000.
+		CYAML_FIELD_END
+	};
+
+	static const cyaml_schema_value_t top_schema = {
+		CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct _strings, top_mapping_scheme),
+	};
+
+
+	struct _strings *strings; // every strings is strings->words_member[n]
+
+	static const cyaml_config_t config = {
+		.log_fn = cyaml_log,
+		.mem_fn = cyaml_mem,
+		.log_level = CYAML_LOG_WARNING,
+	};
+
+	//char * defaultfile = "languages/english200.yaml";
+	cyaml_err_t err = cyaml_load_file("languages/english200.yaml", &config,
+				   &top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
+
+	shuffle(strings->words_member, strings->words_member_count);
+	cyaml_save_file("languages/english200.yaml", &config, &top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
+
+	unsigned int * wordAmount = malloc(sizeof(unsigned int));
+	(*wordAmount) = strings->words_member_count;
+
+	unsigned char line_number = 0;
+	int existing_space[3] = {text_line_length,text_line_length,text_line_length}; 
+
+	unsigned int val=0;
+	unsigned int * awaiting_words = &val;
+
+	// 3 linked lists that point to the same place, but are used in different place.
+	struct _word *initializer_ll, *dynamic_ll, *printed_ll;
+
+	initializer_ll = malloc(_word_size);
+	dynamic_ll = initializer_ll;
+	printed_ll = initializer_ll;
+
+	init_text(initializer_ll, wordAmount, strings, line_number, existing_space, textWin, awaiting_words); // initialize linked list, and print words on screen.
+
+	touchwin(testwin);
+	wrefresh(testwin);
+	wrefresh(textWin);
+
+
+	float spaces = 0;
+	int middleRun = 0, row = 0, col = 0;
+	unsigned char relCursor = 0;
+
+	long time_out[] = {15,30,60,120};
+	long time_out_num = 15;
+	unsigned timeopts = 4;
+	unsigned time_cyc = 0;
+
+	char ** languages;
+	unsigned lang_cyc = 0;
+	unsigned old_lang_cyc = 0;
+	unsigned lang_amount = 2;
+	signed lang_diff = 0;
+	languages = malloc(lang_amount*sizeof(char*));
+	for (unsigned i = 0; i<lang_amount; i++) {
+		languages[i]=malloc(sizeof(char*));
+	}
+
+
+	strcpy(languages[0], "english200");
+	strcpy(languages[1], "english1000");
+
+	wprintw(timeWin, "%lu [Backspace]", time_out_num);
+	wprintw(langWin, "%s [Space]", languages[0]);
+	wprintw(restartWin, "restart [Tab]");
+	wprintw(togglesetWin, "stats [Esc]");
+
+	touchwin(testwin); // only touching the father-window and then refreshing it to update all. then refreshing textWin to put the cursor back there.
+	wrefresh(testwin);
+	wrefresh(textWin);
+
+	int recvChar = getch(); // getting the first keystroke, and acting upon it
+
+	strings = start_keys(&recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,&config, &top_schema);
+
+	//delete backspace from view
+
+	unsigned result;
+	do{
+		touchwin(testwin);
+			wrefresh(testwin);
+			wrefresh(textWin);
+		result = start_test_loop(timeWin, langWin, recvChar, &spaces, textstarty, textstartx, time_out_num, time_cyc, testwin, textWin, dynamic_ll, printed_ll, strings, wordAmount, 0, existing_space, text_line_length, awaiting_words, languages, &config, &top_schema, &dynamic_ll);
+		//result is 0 if reinitiate test 
+		//and 1 to finish
+
+		if (result==0) {
+			strings = restart_text(timeWin, langWin,time_out_num, languages, time_cyc, printed_ll, wordAmount, strings, 0, existing_space, text_line_length, textWin, awaiting_words, languages[time_cyc], &config, &top_schema);
+			// problem could start here. some pointer becomes unvalid or misused.
+			werase(timeWin);
+			werase(langWin);
+			wprintw(timeWin, "%lu [Backspace]", time_out_num);
+			wprintw(langWin, "%s [Space]", languages[time_cyc]);
+			touchwin(testwin);
+			wrefresh(testwin);
+			wrefresh(textWin);
+
+
+			recvChar = getch();
+			strings = start_keys(&recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,&config, &top_schema);
+		}else{
+			break;
+		}
+	}while(true);
+
 	timeout(-1); // cancel timeout for getch()
 	getyx(testwin, row, col);
 	//wmove(testwin, row+1, col);
@@ -743,7 +796,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 			correctWord=false;
 			charAmount+=printed_ll->overword;
 		}
-	if(correctWord){
+		if(correctWord){
 			correctWordChars+= printed_ll->length;
 		}
 
