@@ -93,7 +93,7 @@ long numDig(long number){
 	if(number<100) return 2;
 	if(number<1000) return 3;
 	if(number<10000) return 4;
-		else return 0;
+	else return 0;
 }
 void shuffle(char* names[], size_t n) {
 	for (size_t i = 0; i < n;) {
@@ -118,6 +118,7 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 
 	// print a test-text on textWin
 
+		bool outofwords = false;
 	for(size_t i=0; i<(*wordAmount); initializer_ll=initializer_ll->next_word){
 
 		int length = strlen(strings->words_member[i]);
@@ -126,15 +127,24 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 		initializer_ll->string = malloc(length);
 		strcpy(initializer_ll->string, strings->words_member[i]);
 
-		if(existing_space[line_number]<=length&&line_number!=2){
-			line_number+=1;
-			wmove(textWin, line_number, 0);
-		}
-		if(existing_space[line_number]>length){// only > because if equal i can't fill it. need the user to space to move a line
-			wprintw(textWin,"%s ", initializer_ll->string);
-			existing_space[line_number] -= length+1;
+		// problem
+		if(!outofwords){ // if im out of words, do nothing
+			if(existing_space[line_number]<=length){
+				if(line_number==2){
+					outofwords = true;
+				}else{
+					line_number+=1;
+					wmove(textWin, line_number, 0);
+				}
+			}
+			if(existing_space[line_number]>length){// only > because if equal i can't fill it. need the user to space to move a line
 
-			(*awaiting_words)++;// next word that is waiting to be printed.
+				wprintw(textWin,"%s ", initializer_ll->string);
+				existing_space[line_number] -= length+1;
+
+				(*awaiting_words)++;// next word that is waiting to be printed.
+				//
+			}
 		}
 		//if no space, and line number ==2. don't print nor move line.
 
@@ -146,6 +156,10 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 		initializer_ll->next_word->prev_word = initializer_ll;
 		i++;
 	}
+
+
+
+
 	wmove(textWin, 0, 0);
 	return initializer_ll;
 }
@@ -234,9 +248,6 @@ struct _strings * start_keys(int *recvChar, unsigned * time_cyc,unsigned timeopt
 
 
 struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
-	//unsigned start_test_loop(int recvChar, int * spaces, int textstarty, int textstartx, long time_out_num, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int wordAmount, int line_number, int * existing_space, int text_line_length, int awaiting_words, char ** languages, cyaml_config_t * config, cyaml_schema_value_t * top_schema){
-	// clear textWin, free pointer allocations, zero all pointers, reload file onto the same variable? (how to free in cyaml), shuffle, save file, do init_text
-	// erase windows, re-print
 	werase(textWin);
 
 
@@ -467,8 +478,9 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 
 }
 
+// mistyped spaces for when he mistypes discount from eventually space
 
-unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float * spaces, int textstarty, int textstartx, long time_out_num, unsigned time_cyc, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int * wordAmount, int line_number, int * existing_space, int text_line_length, unsigned int * awaiting_words, char ** languages, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema, struct _word ** dynamic_ll_ptr){
+unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float * spaces, float * mistyped_spaces, int textstarty, int textstartx, long time_out_num, unsigned time_cyc, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int * wordAmount, int line_number, int * existing_space, int text_line_length, unsigned int * awaiting_words, char ** languages, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema, struct _word ** dynamic_ll_ptr){
 
 
 
@@ -521,7 +533,7 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float
 		if (recvChar == KEY_BACKSPACE){ 
 
 			getyx(textWin, row, col);
-			if(row == textstarty && col == textstartx){
+			if(row == textstarty && col == textstartx){// cant backspace the start
 				continue;
 			}
 			if(relCursor==0){// backspaces a space
@@ -529,17 +541,19 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float
 				relCursor = dynamic_ll->length; 
 				col -=1;
 				wmove(textWin,row,col);	
-				spaces--;
+				(*spaces)--;
 
 				// check if the word is overworded, or underworded
-				if(dynamic_ll->overword){ 
+				if(dynamic_ll->overword){ // word is overworded
 					relCursor += dynamic_ll->overword;
 				}else
-				{	
+				{	// discover underworded position (if exists)
 					for (unsigned char i=0; i<dynamic_ll->length; i++) {
 						if (dynamic_ll->ver_arr[i]==NONTYPED_CHAR) {
 							relCursor=i;
 							wmove(textWin,row, col-(dynamic_ll->length-relCursor));
+							(*mistyped_spaces)--;	
+							(*spaces)++; // a space wasn't written to him, so he shouldn't lose one.
 							break;
 						}
 					}
@@ -569,24 +583,66 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float
 				memset((dynamic_ll->ver_arr + relCursor), NONTYPED_CHAR, (dynamic_ll->length - relCursor)); // tab to the next word, non-type next chars.
 				getyx(textWin, row, col);
 				wmove(textWin,row, col+(int)(dynamic_ll->length - relCursor));// what if it drops a line? ERROR
+				(*mistyped_spaces)++;
+			}else {
+			(*spaces)++;
 			}
 
 
 			getyx(textWin, row, col);
+			
 			if(col== (text_line_length-1-existing_space[line_number])){// if he is on the last space, move to next line
+				if(row == 2){
+
+					werase(textWin);
+					wmove(textWin, 0, 0);
+					line_number = 0;
+					bool outofwords = false;
+					
+					existing_space[0] = text_line_length;
+					existing_space[1] = text_line_length;
+					existing_space[2] = text_line_length;
+
+					while(outofwords==false){
+						if(existing_space[line_number]<=strlen(strings->words_member[(*awaiting_words)])){
+							if(line_number==2){
+								outofwords=true;
+							}
+							line_number+=1;
+							wmove(textWin, line_number, 0);
+						}
+						if(existing_space[line_number]>strlen(strings->words_member[(*awaiting_words)])){// only > because if equal i can't fill it. need the user to space to move a line
+							wprintw(textWin,"%s ", strings->words_member[(*awaiting_words)]);
+							existing_space[line_number] -= strlen(strings->words_member[(*awaiting_words)])+1;
+
+							(*awaiting_words)++;// next word that is waiting to be printed.
+						}
+					}
+					
+					wmove(textWin, 0, 0);
+					line_number = 0;
+					touchwin(testwin);
+					wrefresh(testwin);
+					wrefresh(textWin);
+					// last line, last col, typed ' '
+					// clear all, print new
+					// move first
+					// line 0
+				}else {
+				
 				wmove(textWin,row+1,0);
 				line_number++;
+				}
 			}else{
 				waddch(textWin, recvChar);
 			}
 			dynamic_ll=dynamic_ll->next_word;
-			spaces++;
 			relCursor=0;
 		}
 
 		else if (relCursor >= dynamic_ll->length){//overwording 
 			getyx(textWin, row, col);
-			if(col == (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==8){
+			if(col == (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==5){
 				// if he is overwording by 8, stop insch'ing
 				// if he is at the end of the line, don't allow overword
 				continue;
@@ -600,6 +656,7 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int recvChar, float
 		}
 
 		else  { //recvChar = normal key
+			// implement clearing first line, writing new line
 			if(recvChar == dynamic_ll->string[relCursor]){ 
 				waddch(textWin,recvChar | COLOR_PAIR(GREEN));
 				dynamic_ll->ver_arr[relCursor] = CORRECT_CHAR;
@@ -701,7 +758,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 	wrefresh(textWin);
 
 
-	float spaces = 0;
+	float spaces = 0, mistyped_spaces = 0;
 	int middleRun = 0, row = 0, col = 0;
 	unsigned char relCursor = 0;
 
@@ -744,7 +801,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 		touchwin(testwin);
 			wrefresh(testwin);
 			wrefresh(textWin);
-		result = start_test_loop(timeWin, langWin, recvChar, &spaces, textstarty, textstartx, time_out_num, time_cyc, testwin, textWin, dynamic_ll, printed_ll, strings, wordAmount, 0, existing_space, text_line_length, awaiting_words, languages, &config, &top_schema, &dynamic_ll);
+		result = start_test_loop(timeWin, langWin, recvChar, &spaces, &mistyped_spaces, textstarty, textstartx, time_out_num, time_cyc, testwin, textWin, dynamic_ll, printed_ll, strings, wordAmount, 0, existing_space, text_line_length, awaiting_words, languages, &config, &top_schema, &dynamic_ll);
 		//result is 0 if reinitiate test 
 		//and 1 to finish
 
@@ -774,9 +831,10 @@ struct _test_result spawn_test(WINDOW *testwin){
 
 
 	// initialize with spaces:
+	
 	float corrects = spaces;
-	float charAmount = spaces;
-	float correctWordChars = spaces;
+	float charAmount = spaces + mistyped_spaces;
+	float correctWordChars = 0;
 	bool correctWord;
 
 	for( ;printed_ll!=dynamic_ll->next_word; printed_ll=printed_ll->next_word){// stop enumeration when getting to word after the last
@@ -797,7 +855,7 @@ struct _test_result spawn_test(WINDOW *testwin){
 			charAmount+=printed_ll->overword;
 		}
 		if(correctWord){
-			correctWordChars+= printed_ll->length;
+			correctWordChars+= printed_ll->length + 1;// + 1 for correctly typed space
 		}
 
 
@@ -806,8 +864,12 @@ struct _test_result spawn_test(WINDOW *testwin){
 	// raw wpm: all chars + spaces /5 ) * 60/15
 	// corrects: all correct chars + spaces 
 	// acc: all corrects / all chars
+	//
+	//
+	//
+	// important to verify: when backspacing, change the ver_arr of the thing to nontyped.
 
-	wprintw(testwin,"wpm: %f, raw wpm: %f, accuracy: %f", ((correctWordChars)/5.0)*(60.0/((float)time_out_num)), (charAmount/5)*(60/((float)time_out_num)), (corrects/charAmount)*100);
+	wprintw(testwin,"wpm: %f, raw wpm: %f, accuracy: %f",((correctWordChars)/5.0)*(60.0/((float)time_out_num)), (charAmount/5)*(60/((float)time_out_num)), (corrects/charAmount)*100);
 	wprintw(testwin,"\ncalcs-> correct chars in full words + spaces: %f, charAmount: %f,  corrects total: %f, spaces: %f", correctWordChars, charAmount, corrects, spaces);
 	wprintw(testwin, "\nlanguage: %s; time: %lu", languages[time_cyc], time_out_num );
 
