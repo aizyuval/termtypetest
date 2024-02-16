@@ -11,4 +11,16 @@ Perform a an offline typing test with useful data analays.
 ## Notes:
 
 * it only works on linux
-* The code is messy. I made it super bloated than it should've been.
+* The code is super messy. I made it super bloated than it should've been.
+
+## Instalation:
+
+### Dependencies:
+    [ncurses](https://invisible-island.net/ncurses/#downloads)
+    [libyaml](https://github.com/yaml/libyaml)
+    [libcyaml](https://github.com/tlsa/libcyaml?tab=readme-ov-file)
+
+### run:
+
+    $make
+    ./typtest
