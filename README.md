@@ -17,7 +17,9 @@ Perform a an offline typing test with useful data analays.
 
 ### Dependencies:
 [ncurses](https://invisible-island.net/ncurses/#downloads)
+
 [libyaml](https://github.com/yaml/libyaml)
+
 [libcyaml](https://github.com/tlsa/libcyaml?tab=readme-ov-file)
 
 ### run:
