@@ -1,0 +1,36 @@
+time15:
+  best:
+    wpm: 0
+    rwpm: 0 
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
+time30:
+  best:
+    wpm: 0
+    rwpm: 0
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
+time60:
+  best:
+    wpm: 0
+    rwpm: 0
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
+time120:
+  best:
+    wpm: 0
+    rwpm: 0
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
