@@ -31,13 +31,10 @@ struct stats_cat { // structure for storing a time category stats
 	unsigned int tests_count;
 };
 struct stats_file {// top level structure for storing lanaguage stats
-	//struct stats_cat times[4];
-	struct stats_cat time15;
-	struct stats_cat time30;
-	struct stats_cat time60;
-	struct stats_cat time120;
-};
+	struct stats_cat *times;
+	unsigned int times_count;
 
+};
 
 
 struct stats_result { // structure for passing test data between functions
@@ -58,7 +55,7 @@ struct _strings {
 	unsigned int words_member_count; // maybe I can gather all english categories in a single file, and draw how much i'd like when he asks. 200?ok. 1000? ok.
 };
 WINDOW *create_testwin();
-struct stats_result * spawn_test(WINDOW * testwin, struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar);
+struct stats_result * spawn_test(WINDOW * testwin,struct stats_file ** address_to_stats, struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar);
 struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, WINDOW * textWin, unsigned int * awaiting_words);
 
 WINDOW *create_statswin();
@@ -72,7 +69,7 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,struct _strings * strings, int in_x);
 
 
-struct _strings * start_keys(struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top,int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
+struct _strings * start_keys(struct stats_file ** address_to_stats,struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top,int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
 
 struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
 
@@ -112,18 +109,13 @@ int main()
 		CYAML_FIELD_SEQUENCE("tests", CYAML_FLAG_POINTER, struct stats_cat, tests,&stats_metrics_schema,0,CYAML_UNLIMITED), // tests is sequence without known size
 		CYAML_FIELD_END
 	};
+	static const cyaml_schema_value_t stats_cat_schema = {
+		CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, struct stats_cat, stats_cat_field_schema),
+	};
 
 
 	static const cyaml_schema_field_t stats_file_field_schema[] = {
-		CYAML_FIELD_MAPPING(
-			"time15", CYAML_FLAG_DEFAULT, struct stats_file, time15, stats_cat_field_schema),
-
-		CYAML_FIELD_MAPPING(
-			"time30", CYAML_FLAG_DEFAULT, struct stats_file, time30, stats_cat_field_schema),
-		CYAML_FIELD_MAPPING(
-			"time60", CYAML_FLAG_DEFAULT, struct stats_file, time60, stats_cat_field_schema),
-		CYAML_FIELD_MAPPING(
-			"time120", CYAML_FLAG_DEFAULT, struct stats_file, time120, stats_cat_field_schema),
+		CYAML_FIELD_SEQUENCE("times", CYAML_FLAG_POINTER, struct stats_file, times, &stats_cat_schema, 0,CYAML_UNLIMITED),
 		CYAML_FIELD_END
 	};
 
@@ -145,17 +137,17 @@ int main()
 		(*recvChar) = ' ';
 		struct stats_file *stats; 
 		struct stats_result *statisticsP;
-		cyaml_err_t stats_err = cyaml_load_file("stats.yaml", &config,
+		cyaml_err_t stats_err = cyaml_load_file("stats/english200.yaml", &config,
 					  &stats_file_schema_top, (cyaml_data_t **)&stats, NULL); //      not here!
 		if(stats_err != CYAML_OK){
 			printw("we cannot load stats file for some reason!");
 			getch();
 			endwin();
 		}
-		//printw("loaded correctly: best1: wpm: %f", stats->time15.best.wpm);
+		//printw("loaded correctly: best1: wpm: %f", stats->times[time_cyc].best.wpm);
 
 		WINDOW * testwin = create_testwin();
-		statisticsP = spawn_test(testwin, stats,&config,&stats_file_schema_top, recvChar);	
+		statisticsP = spawn_test(testwin, &stats,stats,&config,&stats_file_schema_top, recvChar);	
 		destroy_win(testwin);	
 
 
@@ -252,7 +244,7 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 }
 
 
-struct _strings * start_keys(struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top, int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
+struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top, int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
 	while ((*recvChar) == KEY_BACKSPACE || (*recvChar) == ' '|| (*recvChar) == KEY_TAB || (*recvChar) == KEY_BACKTICK || (*recvChar) == KEY_ENT) // or esc / Tab
 	{
 		if((*recvChar)==KEY_BACKSPACE){
@@ -331,22 +323,28 @@ struct _strings * start_keys(struct stats_file * stats,const cyaml_schema_value_
 			strcat(file, ext); // stats/english200.yaml
 			
 			cyaml_err_t stats_err = cyaml_load_file(file, config,
+
 					   stats_file_schema_top, (cyaml_data_t **)&temp, NULL); 
 			if(stats_err != CYAML_OK){
 				printw("we cannot load stats file for some reason!");
 				getch();
 				endwin();
 			}
+			
+			memcpy(address_to_stats, &temp, sizeof(struct stats_file *)); // changing the stats variable of the above function
+			stats = temp; // changing the local variable to point to the newly created schema bbin
 
 
-			strings = restart_text(timeWin, langWin,(*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*time_cyc)], config, top_schema); // update strings after freeing it!
+			strings = restart_text(timeWin, langWin,(*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)], config, top_schema); // update strings after freeing it!
+			
 		}else if((*recvChar) == KEY_TAB){
-			strings = restart_text(timeWin, langWin, (*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*time_cyc)], config, top_schema);
+
+			strings = restart_text(timeWin, langWin, (*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)], config, top_schema);
+
 		}else if ((*recvChar) == KEY_BACKTICK || (*recvChar) == KEY_ENT) {
-
 			return NULL;
-
 		}
+		
 		touchwin(testwin);
 		wrefresh(testwin);
 		wrefresh(textWin);
@@ -794,7 +792,7 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 
 
 
-struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar){
+struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_to_stats,struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar){
 	// destroy other wins.
 
 	int height = LINES/2;
@@ -910,9 +908,14 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, con
 	(*recvChar) = getch();
 
 	struct _strings *protoS;
-	protoS = start_keys(stats, stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+	protoS = start_keys(&stats, stats, stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+	memcpy(address_to_stats, &stats, sizeof(struct stats_file *)); // changing the global variable, stats, to point to the newly created schema.
+	
 	if(protoS == NULL)
 	{
+
+		//struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
+		//statisticsP->language=languages[time_cyc];
 		return NULL;
 		// returning null meaning no test was committed and he wants to go to stats
 	}
@@ -946,8 +949,11 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, con
 			(*recvChar) = getch();
 
 			struct _strings *protoS;
-			protoS = start_keys(stats,stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+			protoS = start_keys(&stats, stats,stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+			memcpy(address_to_stats, &stats, sizeof(struct stats_file *)); // changing the global variable, stats, to point to the newly created schema.
 			if(protoS==NULL){
+				//struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
+				//statisticsP->language=languages[time_cyc];
 				return NULL;
 			}
 			strings = protoS;
@@ -1006,9 +1012,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, con
 
 	wrefresh(testwin);
 
-	timeout(10000);
-	getch(); 
-	timeout(-1);
 
 	struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
 
@@ -1022,38 +1025,50 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, con
 	statisticsP->pb = false; // assuming it's not the pb
 
 	// check if it had surpassed the best score and act upon it
-	if(statisticsP->statistics.wpm >= stats->time15.best.wpm){
+	// time_cyc is my number here, our stats located in stats->times[time_cyc].best....
+	if(statisticsP->statistics.wpm >= stats->times[time_cyc].best.wpm){
 
-		if(statisticsP->statistics.wpm == stats->time15.best.wpm){
-			if(statisticsP->statistics.acc>stats->time15.best.acc){
-				stats->time15.best = statisticsP->statistics; // if it has the same wpm and bigger acc, replace
+		if(statisticsP->statistics.wpm == stats->times[time_cyc].best.wpm){
+			if(statisticsP->statistics.acc>stats->times[time_cyc].best.acc){
+				stats->times[time_cyc].best = statisticsP->statistics; // if it has the same wpm and bigger acc, replace
 				statisticsP->pb = true;
 			}
 		}else{
-			stats->time15.best = statisticsP->statistics; // it has bigger wpm, replace
+			stats->times[time_cyc].best = statisticsP->statistics; // it has bigger wpm, replace
 			statisticsP->pb = true;
 		}
 
 	}
 
-	unsigned int testsC = stats->time15.tests_count;
+	refresh();
+	getch();
+	unsigned int testsC = stats->times[time_cyc].tests_count;
 	struct stats_metrics *temp = realloc(
-			stats->time15.tests,
-			sizeof(*stats->time15.tests) * (testsC + 1));
+			stats->times[time_cyc].tests,
+			sizeof(*stats->times[time_cyc].tests) * (testsC + 1));
 
 	if (temp == NULL) {
 		printw("adding test to list failed");
 		// Handle error
 	}
-	stats->time15.tests = temp; // newly allocated memory
+	stats->times[time_cyc].tests = temp; // newly allocated memory
 
 
-	stats->time15.tests[testsC] = statisticsP->statistics; // it appends it in the local file but not in the yaml
-	stats->time15.tests_count++; // increment count
-	//printw("new indexwpm: %f", stats->time15.tests[testsC].wpm); // cyaml does not save it.
+	stats->times[time_cyc].tests[testsC] = statisticsP->statistics; // it appends it in the local file but not in the yaml
+	stats->times[time_cyc].tests_count++; // increment count
+	//printw("new indexwpm: %f", stats->times[time_cyc].tests[testsC].wpm); // cyaml does not save it.
 
-	//stats->time15.tests[0].wpm = 1000; // prove for saving
-	err = cyaml_save_file("stats.yaml", config, stats_file_schema_top, stats,0); 
+	//stats->times[time_cyc].tests[0].wpm = 1000; // prove for saving
+			char * dir = "stats/";
+			char * ext = ".yaml";
+			char *file = malloc(strlen(dir) + strlen(languages[lang_cyc]) + strlen(ext) +1);
+
+			memcpy(file, dir, strlen(dir)); // stats/
+			strcat(file, languages[lang_cyc]); // stats/english200
+			strcat(file, ext); // stats/english200.yaml
+			
+
+	err = cyaml_save_file(file, config, stats_file_schema_top, stats,0); 
 
 	if(err!=CYAML_OK){
 		printw("err dreaded, canno tsave to stats file");
@@ -1073,16 +1088,16 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file * stats, con
 }
 void spawn_stats(WINDOW * statswin, struct stats_result * statisticsP, struct stats_file *stats, int * recvChar){
 	if(statisticsP == NULL){
-		wprintw(statswin, "language: %s", statisticsP->language);
-		wprintw(statswin, "this are general stats:\n \
+		//wprintw(statswin, "language: %s", statisticsP->language); //  segmentation fault, no lang...
+		wprintw(statswin, "this are general stats(for english200):\n \
 time15: \n wpm: %f; raw wpm: %f; accuracy: %f\n \
 time30: \n wpm: %f; raw wpm: %f; accuracy: %f\n \
 time60: \n wpm: %f; raw wpm: %f; accuracy: %f\n \
 time120: \n wpm: %f; raw wpm: %f; accuracy: %f\n", 
-	  stats->time15.best.wpm, stats->time15.best.rwpm, stats->time15.best.acc,
-	  stats->time30.best.wpm, stats->time30.best.rwpm, stats->time30.best.acc,
-	  stats->time60.best.wpm, stats->time60.best.rwpm, stats->time60.best.acc,
-	  stats->time120.best.wpm, stats->time120.best.rwpm, stats->time120.best.acc);
+	  stats->times[0].best.wpm, stats->times[0].best.rwpm, stats->times[0].best.acc,
+	  stats->times[1].best.wpm, stats->times[1].best.rwpm, stats->times[1].best.acc,
+	  stats->times[2].best.wpm, stats->times[2].best.rwpm, stats->times[2].best.acc,
+	  stats->times[3].best.wpm, stats->times[3].best.rwpm, stats->times[3].best.acc);
 	}else {
 		if(statisticsP->pb){
 			wprintw(statswin, "\nTHIS IS A NEW Personal Best. CONGRATS!!!\n");
@@ -1101,7 +1116,9 @@ time120: \n wpm: %f; raw wpm: %f; accuracy: %f\n",
 void destroy_win(WINDOW *local_win)
 {	
 	werase(local_win);
+	//werase(stdscr);
 	wborder(local_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	wrefresh(local_win);
 	delwin(local_win);
 }
+// segment with 2 spaces!
