@@ -1,14 +1,5 @@
-time15:
-  best:
-    wpm: 0
-    rwpm: 0 
-    acc: 0
-  tests:
-  - wpm: 0
-    rwpm: 0
-    acc: 0
-time30:
-  best:
+times:
+- best:
     wpm: 0
     rwpm: 0
     acc: 0
@@ -16,8 +7,7 @@ time30:
   - wpm: 0
     rwpm: 0
     acc: 0
-time60:
-  best:
+- best:
     wpm: 0
     rwpm: 0
     acc: 0
@@ -25,8 +15,15 @@ time60:
   - wpm: 0
     rwpm: 0
     acc: 0
-time120:
-  best:
+- best:
+    wpm: 0
+    rwpm: 0
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
+- best:
     wpm: 0
     rwpm: 0
     acc: 0

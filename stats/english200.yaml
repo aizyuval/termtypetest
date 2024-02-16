@@ -1,29 +1,5 @@
-time15:
-  best:
-    wpm: 78.4
-    rwpm: 78.4
-    acc: 100
-  tests:
-  - wpm: 1000
-    rwpm: 31.2
-    acc: 100
-  - wpm: 66.4
-    rwpm: 66.4
-    acc: 100
-  - wpm: 63.2
-    rwpm: 64
-    acc: 100
-  - wpm: 33.6
-    rwpm: 36
-    acc: 100
-  - wpm: 73.6
-    rwpm: 74.4
-    acc: 100
-  - wpm: 62.4
-    rwpm: 62.4
-    acc: 100
-time30:
-  best:
+times:
+- best:
     wpm: 0
     rwpm: 0
     acc: 0
@@ -31,8 +7,7 @@ time30:
   - wpm: 0
     rwpm: 0
     acc: 0
-time60:
-  best:
+- best:
     wpm: 0
     rwpm: 0
     acc: 0
@@ -40,8 +15,15 @@ time60:
   - wpm: 0
     rwpm: 0
     acc: 0
-time120:
-  best:
+- best:
+    wpm: 0
+    rwpm: 0
+    acc: 0
+  tests:
+  - wpm: 0
+    rwpm: 0
+    acc: 0
+- best:
     wpm: 0
     rwpm: 0
     acc: 0
