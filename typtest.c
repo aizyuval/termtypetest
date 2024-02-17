@@ -17,6 +17,8 @@
 #define	NONTYPED_CHAR 2
 #define GREEN 3 
 #define RED 2
+#define homedi getenv("HOME")
+#define homedi_len strlen(homedi)
 #define _word_size sizeof(struct _word)
 
 struct stats_metrics {// structure for storing a test metrics
@@ -137,14 +139,22 @@ int main()
 		(*recvChar) = ' ';
 		struct stats_file *stats; 
 		struct stats_result *statisticsP;
-		cyaml_err_t stats_err = cyaml_load_file("stats/english200.yaml", &config,
+
+		if(homedi==NULL){printw("couldnt get your home dir");}
+
+		char * englishstat = "/termtypetest/stats/english200.yaml";
+		char * homedir = malloc(homedi_len+strlen(englishstat));
+
+		strcpy(homedir, homedi);
+		strcat(homedir,englishstat);
+
+		cyaml_err_t stats_err = cyaml_load_file(homedir, &config,
 					  &stats_file_schema_top, (cyaml_data_t **)&stats, NULL); //      not here!
 		if(stats_err != CYAML_OK){
 			printw("we cannot load stats file for some reason!");
 			getch();
 			endwin();
 		}
-		//printw("loaded correctly: best1: wpm: %f", stats->times[time_cyc].best.wpm);
 
 		WINDOW * testwin = create_testwin();
 		statisticsP = spawn_test(testwin, &stats,stats,&config,&stats_file_schema_top, recvChar);	
@@ -314,15 +324,20 @@ struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats
 			wprintw(langWin,"%s", languages[(*lang_cyc)]);
 
 			// load new file to the stats pointer
-			char * dir = "stats/";
-			char * ext = ".yaml";
-			char *file = malloc(strlen(dir) + strlen(languages[(*lang_cyc)]) + strlen(ext) +1);
 
-			memcpy(file, dir, strlen(dir)); // stats/
-			strcat(file, languages[(*lang_cyc)]); // stats/english200
-			strcat(file, ext); // stats/english200.yaml
+			if(homedi==NULL){printw("couldnt get your home dir");}
+			char * dir = "/termtypetest/stats/";
+			char * ext = ".yaml";
+			char *filep = malloc(homedi_len + strlen(dir) + strlen(languages[(*lang_cyc)]) + strlen(ext) +1);
+
+			//memcpy(filep, homedi, homedi_len); // stats/
+			strcpy(filep,homedi);
+			strcat(filep, dir);
+			strcat(filep, languages[(*lang_cyc)]); // stats/english200
+			strcat(filep, ext); // stats/english200.yaml
 			
-			cyaml_err_t stats_err = cyaml_load_file(file, config,
+
+			cyaml_err_t stats_err = cyaml_load_file(filep, config,
 
 					   stats_file_schema_top, (cyaml_data_t **)&temp, NULL); 
 			if(stats_err != CYAML_OK){
@@ -383,12 +398,14 @@ struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out
 	}
 
 
-
-	char * dir = "languages/";
+			if(homedi==NULL){printw("couldnt get your home dir");}
+			char * dir = "/termtypetest/languages/";
 	char * ext = ".yaml";
-	char *file = malloc(strlen(dir) + strlen(lang) + strlen(ext) +1);
+	char *file = malloc(homedi_len+ strlen(dir) + strlen(lang) + strlen(ext) +1);
 
-	memcpy(file, dir, strlen(dir)); // languages/
+	//memcpy(file, homedi, homedi_len); // languages/
+	strcpy(file, homedi);
+	strcat(file, dir);
 	strcat(file, lang); // languages/english200
 	strcat(file, ext); // languages/english200.yaml
 
@@ -489,13 +506,10 @@ void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_li
 		int char_holder0;
 
 		if (existing_space[line_number]<next_word_length) {
-			//printw("next_word_length wont fit.\n");
 			wmove(win, line_number, in_x);
-			//break
 
 		}else {
 
-			//printw("trying to fit word!.\n");
 			while (true) {
 
 				wmove(win,line_number+1,0);
@@ -832,17 +846,25 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	struct _strings *strings; // every strings is strings->words_member[n]
 
 
-	cyaml_err_t err = cyaml_load_file("languages/english200.yaml", config,
+	char * filep = "/termtypetest/languages/english200.yaml";
+	char * hd = malloc(homedi_len+strlen(filep));
+	strcpy(hd, homedi);
+
+	if(hd==NULL){printw("couldnt get your home dir");}
+
+	strcat(hd, filep);
+
+	cyaml_err_t err = cyaml_load_file(hd, config,
 				   &top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
 	if(err!=CYAML_OK){
 		printw("err. cannot load english 200 file");
 	}
 
 	shuffle(strings->words_member, strings->words_member_count);
-	err = cyaml_save_file("languages/english200.yaml", config, &top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
+	err = cyaml_save_file(hd, config, &top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
 	//
 	if(err!=CYAML_OK){
-		printw("err. i cannot save to the egnlish 200 yaml");
+		printw("err. cannot save to the egnlish 200 yaml");
 	}
 
 
@@ -872,8 +894,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 
 
 	float spaces = 0, mistyped_spaces = 0;
-	int middleRun = 0, row = 0, col = 0;
-	unsigned char relCursor = 0;
 
 	long time_out[] = {15,30,60,120};
 	long time_out_num = 15;
@@ -963,9 +983,7 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	}while(true);
 
 	timeout(-1); // cancel timeout for getch()
-	getyx(testwin, row, col);
 	//wmove(testwin, row+1, col);
-	wprintw(testwin,"loopended");
 
 
 	// initialize with spaces:
@@ -1006,12 +1024,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	//
 	//
 	// important to verify: when backspacing, change the ver_arr of the thing to nontyped.
-	wprintw(testwin,"wpm: %f, raw wpm: %f, accuracy: %f",((correctWordChars)/5.0)*(60.0/((float)time_out_num)), (charAmount/5)*(60/((float)time_out_num)), (corrects/charAmount)*100);
-	wprintw(testwin,"\ncalcs-> correct chars in full words + spaces: %f, charAmount: %f,  corrects total: %f, spaces: %f", correctWordChars, charAmount, corrects, spaces);
-	wprintw(testwin, "\nlanguage: %s; time: %lu", languages[lang_cyc], time_out_num );
-
-	wrefresh(testwin);
-
 
 	struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
 
@@ -1040,8 +1052,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 
 	}
 
-	refresh();
-	getch();
 	unsigned int testsC = stats->times[time_cyc].tests_count;
 	struct stats_metrics *temp = realloc(
 			stats->times[time_cyc].tests,
@@ -1056,14 +1066,17 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 
 	stats->times[time_cyc].tests[testsC] = statisticsP->statistics; // it appends it in the local file but not in the yaml
 	stats->times[time_cyc].tests_count++; // increment count
-	//printw("new indexwpm: %f", stats->times[time_cyc].tests[testsC].wpm); // cyaml does not save it.
 
 	//stats->times[time_cyc].tests[0].wpm = 1000; // prove for saving
-			char * dir = "stats/";
+	//
+	// hh dd getenv is already defined
+			char * dir = "/termtypetest/stats/";
 			char * ext = ".yaml";
-			char *file = malloc(strlen(dir) + strlen(languages[lang_cyc]) + strlen(ext) +1);
-
-			memcpy(file, dir, strlen(dir)); // stats/
+			char *file = malloc(homedi_len+ strlen(dir) + strlen(languages[lang_cyc]) + strlen(ext) +1);
+			strcpy(file, homedi);// start with homedi
+			
+			strcat(file, dir);
+	//
 			strcat(file, languages[lang_cyc]); // stats/english200
 			strcat(file, ext); // stats/english200.yaml
 			
