@@ -1,2 +1,2 @@
 typtest: typtest.c
-	clang -Wall typtest.c -o typtest -lncurses -lcyaml
+	clang -Wall typtest.c -o /usr/bin/typetest -lncurses -lcyaml
