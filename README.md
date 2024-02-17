@@ -15,7 +15,7 @@ Perform a an offline typing test with useful data analays.
 
 ## Instalation:
 
-### Dependencies:
+### Must Have Dependencies:
 [ncurses](https://invisible-island.net/ncurses/#downloads)
 
 [libyaml](https://github.com/yaml/libyaml)
@@ -24,5 +24,9 @@ Perform a an offline typing test with useful data analays.
 
 ### run:
 
-    $make
-    ./typtest
+    git clone github/aizyuval/termtypetest.git
+    $ cd termtypetest
+    $ sudo make
+    $ typetest
+
+then you can write 'typetest' from anywhere in the terminal.
