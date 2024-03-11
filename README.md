@@ -23,10 +23,12 @@ Perform a an offline typing test with useful data analays.
 [libcyaml](https://github.com/tlsa/libcyaml?tab=readme-ov-file)
 
 ### run:
-
-    git clone github/aizyuval/termtypetest.git
-    $ cd termtypetest
-    $ sudo make
-    $ typetest
+```
+$ cd ~
+$ git clone github/aizyuval/termtypetest.git
+$ cd termtypetest
+$ sudo make
+$ typetest
+```
 
 then you can write 'typetest' from anywhere in the terminal.
