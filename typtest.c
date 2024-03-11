@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <wchar.h>
+#include "schema/schema.h"
 
 #define KEY_ENT 10
 #define KEY_BACKTICK 96
@@ -17,29 +18,13 @@
 #define	NONTYPED_CHAR 2
 #define GREEN 3 
 #define RED 2
+
 #define homedi getenv("HOME")
 #define homedi_len strlen(homedi)
 #define _word_size sizeof(struct _word)
 
-struct stats_metrics {// structure for storing a test metrics
-
-	float wpm;
-	float rwpm;
-	float acc;
-};
-struct stats_cat { // structure for storing a time category stats
-	struct stats_metrics best; // instance of stats metrics
-	struct stats_metrics *tests; // array of stats metrics
-	unsigned int tests_count;
-};
-struct stats_file {// top level structure for storing lanaguage stats
-	struct stats_cat *times;
-	unsigned int times_count;
-
-};
-
-
-struct stats_result { // structure for passing test data between functions
+/* Define structs for specific use: */
+struct stats_result { 
 	struct stats_metrics statistics;
 	char *language;
 	bool pb;
@@ -52,34 +37,33 @@ struct _word {
 	struct _word * prev_word;
 	struct _word * next_word;
 };
-struct _strings {
-	char ** words_member;
-	unsigned int words_member_count; // maybe I can gather all english categories in a single file, and draw how much i'd like when he asks. 200?ok. 1000? ok.
-};
+
+/* Function prototypes: */
+
 WINDOW *create_testwin();
-struct stats_result * spawn_test(WINDOW * testwin,struct stats_file ** address_to_stats, struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar);
-struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, WINDOW * textWin, unsigned int * awaiting_words);
-
 WINDOW *create_statswin();
-void spawn_stats(WINDOW * statswin, struct stats_result *statisticsP, struct stats_file *stats, int * recvChar);
-
-
 
 void destroy_win(WINDOW *local_win);
 
 void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_x, int in_y);
 void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,struct _strings * strings, int in_x);
 
+struct stats_result * spawn_test(WINDOW * testwin,struct stats_file ** address_to_stats, struct stats_file * stats,  int * recvChar);
+void spawn_stats(WINDOW * statswin, struct stats_result *statisticsP, struct stats_file *stats, int * recvChar);
 
-struct _strings * start_keys(struct stats_file ** address_to_stats,struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top,int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
+struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, WINDOW * textWin, unsigned int * awaiting_words);
 
-struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema);
+struct _strings * start_keys(struct stats_file ** address_to_stats,struct stats_file * stats,int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length, WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words );
+
+struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang);
 
 
 long numDig(long number);
 void shuffle(char* names[], size_t n);
 
 
+/* Main program loop: */
+/* Here the program runs as long as he does not exit */
 
 
 int main()
@@ -87,54 +71,16 @@ int main()
 	initscr();			/* Start curses mode 		*/
 	keypad(stdscr, TRUE);
 	noecho();			/* Don't echo() while we do getch */
-	use_default_colors();           // use default background and foregrounds 
-	start_color();			//Start color
+	use_default_colors();           /* Use default background and foregrounds */
+	start_color();			/* Start color */
 	init_pair(RED,COLOR_RED, -1); 
 	init_pair(GREEN,COLOR_GREEN, -1);
 	refresh();
 
-	//before spawning test, load data to structs for test/stats windows uses ( need to reload everytime I Save something to it and run a test/stats
-	static const cyaml_schema_field_t stats_metrics_field_schema[] = {
-		CYAML_FIELD_FLOAT("wpm",CYAML_FLAG_DEFAULT, struct stats_metrics, wpm),
-		CYAML_FIELD_FLOAT("rwpm",CYAML_FLAG_DEFAULT, struct stats_metrics, rwpm),
-		CYAML_FIELD_FLOAT("acc",CYAML_FLAG_DEFAULT, struct stats_metrics, acc),
-
-		CYAML_FIELD_END
-	};
-	static const cyaml_schema_value_t stats_metrics_schema = {
-		CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, struct stats_metrics, stats_metrics_field_schema),
-	};
-
-	static const cyaml_schema_field_t stats_cat_field_schema[] = {
-		CYAML_FIELD_MAPPING(
-			"best", CYAML_FLAG_DEFAULT, struct stats_cat, best, stats_metrics_field_schema),
-		CYAML_FIELD_SEQUENCE("tests", CYAML_FLAG_POINTER, struct stats_cat, tests,&stats_metrics_schema,0,CYAML_UNLIMITED), // tests is sequence without known size
-		CYAML_FIELD_END
-	};
-	static const cyaml_schema_value_t stats_cat_schema = {
-		CYAML_VALUE_MAPPING(CYAML_FLAG_DEFAULT, struct stats_cat, stats_cat_field_schema),
-	};
-
-
-	static const cyaml_schema_field_t stats_file_field_schema[] = {
-		CYAML_FIELD_SEQUENCE("times", CYAML_FLAG_POINTER, struct stats_file, times, &stats_cat_schema, 0,CYAML_UNLIMITED),
-		CYAML_FIELD_END
-	};
-
-	static const cyaml_schema_value_t stats_file_schema_top = {
-		CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct stats_file, stats_file_field_schema),
-	};
-
-
-
-	static const cyaml_config_t config = {
-		.log_fn = cyaml_log,
-		.mem_fn = cyaml_mem,
-		.log_level = CYAML_LOG_WARNING,
-	};
-	int * recvChar = malloc(2);
+	int * recvChar = malloc(1);
 	(*recvChar) = ' ';
-	while ((*recvChar) != KEY_ENT) { // as long as he doesn't exit, this program runs
+
+	while ((*recvChar) != KEY_ENT) { 
 
 		(*recvChar) = ' ';
 		struct stats_file *stats; 
@@ -147,9 +93,9 @@ int main()
 
 		strcpy(homedir, homedi);
 		strcat(homedir,englishstat);
+		//printw("your dir is : homedi: %s and dir: %s", homedi, englishstat);
 
-		cyaml_err_t stats_err = cyaml_load_file(homedir, &config,
-					  &stats_file_schema_top, (cyaml_data_t **)&stats, NULL); //      not here!
+		cyaml_err_t stats_err = cyaml_load_file(homedir, &config,&stats_file_schema_top, (cyaml_data_t **)&stats, NULL); 
 		if(stats_err != CYAML_OK){
 			printw("we cannot load stats file for some reason!");
 			getch();
@@ -157,7 +103,7 @@ int main()
 		}
 
 		WINDOW * testwin = create_testwin();
-		statisticsP = spawn_test(testwin, &stats,stats,&config,&stats_file_schema_top, recvChar);	
+		statisticsP = spawn_test(testwin, &stats,stats, recvChar);	
 		destroy_win(testwin);	
 
 
@@ -205,7 +151,7 @@ void shuffle(char* names[], size_t n) {
 }
 struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, WINDOW * textWin, unsigned int * awaiting_words){
 
-	// print a test-text on textWin
+	/* Print the test words on screen */
 
 	bool outofwords = false;
 	for(size_t i=0; i<(*wordAmount); initializer_ll=initializer_ll->next_word){
@@ -216,8 +162,7 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 		initializer_ll->string = malloc(length);
 		strcpy(initializer_ll->string, strings->words_member[i]);
 
-		// problem
-		if(!outofwords){ // if im out of words, do nothing
+		if(!outofwords){ 
 			if(existing_space[line_number]<=length){
 				if(line_number==2){
 					outofwords = true;
@@ -226,7 +171,7 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 					wmove(textWin, line_number, 0);
 				}
 			}
-			if(existing_space[line_number]>length){// only > because if equal i can't fill it. need the user to space to move a line
+			if(existing_space[line_number]>length){// only > because if equal we can't fill it. need the user to space to move a line
 
 				wprintw(textWin,"%s ", initializer_ll->string);
 				existing_space[line_number] -= length+1;
@@ -246,15 +191,16 @@ struct _word * init_text (struct _word * initializer_ll, unsigned int * wordAmou
 		i++;
 	}
 
-
-
-
 	wmove(textWin, 0, 0);
 	return initializer_ll;
 }
 
 
-struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats_file * stats,const cyaml_schema_value_t *stats_file_schema_top, int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
+struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats_file * stats, int *recvChar, unsigned * time_cyc,unsigned timeopts, long * time_out_num, long time_out[], WINDOW *timeWin, char **languages, unsigned * lang_cyc, unsigned old_lang_cyc, unsigned lang_amount, signed lang_diff, WINDOW * langWin, struct _word * printed_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int existing_space[], int text_line_length,WINDOW * testwin, WINDOW * textWin, unsigned int * awaiting_words){
+
+	/* Start listening for user keys, and act accordingly */ 
+	/* As defined at the top, there are a few keys that we will listen to */
+
 	while ((*recvChar) == KEY_BACKSPACE || (*recvChar) == ' '|| (*recvChar) == KEY_TAB || (*recvChar) == KEY_BACKTICK || (*recvChar) == KEY_ENT) // or esc / Tab
 	{
 		if((*recvChar)==KEY_BACKSPACE){
@@ -285,7 +231,7 @@ struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats
 		}else if((*recvChar) == KEY_SPACE){
 
 			struct stats_file * temp = stats;
-			cyaml_err_t err = cyaml_free(config, stats_file_schema_top, stats, 0); 
+			cyaml_err_t err = cyaml_free(&config, &stats_file_schema_top, stats, 0); 
 			if(err !=CYAML_OK){
 				wprintw(stdscr, "error! cannot FREE loaded words");
 				getch();
@@ -330,16 +276,13 @@ struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats
 			char * ext = ".yaml";
 			char *filep = malloc(homedi_len + strlen(dir) + strlen(languages[(*lang_cyc)]) + strlen(ext) +1);
 
-			//memcpy(filep, homedi, homedi_len); // stats/
 			strcpy(filep,homedi);
 			strcat(filep, dir);
 			strcat(filep, languages[(*lang_cyc)]); // stats/english200
 			strcat(filep, ext); // stats/english200.yaml
 			
 
-			cyaml_err_t stats_err = cyaml_load_file(filep, config,
-
-					   stats_file_schema_top, (cyaml_data_t **)&temp, NULL); 
+			cyaml_err_t stats_err = cyaml_load_file(filep, &config, &stats_file_schema_top, (cyaml_data_t **)&temp, NULL); 
 			if(stats_err != CYAML_OK){
 				printw("we cannot load stats file for some reason!");
 				getch();
@@ -350,11 +293,11 @@ struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats
 			stats = temp; // changing the local variable to point to the newly created schema bbin
 
 
-			strings = restart_text(timeWin, langWin,(*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)], config, top_schema); // update strings after freeing it!
+			strings = restart_text(timeWin, langWin,(*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)]); // update strings after freeing it!
 			
 		}else if((*recvChar) == KEY_TAB){
 
-			strings = restart_text(timeWin, langWin, (*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)], config, top_schema);
+			strings = restart_text(timeWin, langWin, (*time_out_num), languages, (*time_cyc),printed_ll, wordAmount, strings, line_number, existing_space, text_line_length, textWin, awaiting_words, languages[(*lang_cyc)]);
 
 		}else if ((*recvChar) == KEY_BACKTICK || (*recvChar) == KEY_ENT) {
 			return NULL;
@@ -372,7 +315,7 @@ struct _strings * start_keys(struct stats_file ** address_to_stats, struct stats
 
 
 
-struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang,const cyaml_config_t * config, const cyaml_schema_value_t * top_schema){
+struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out_num,char** languages,unsigned time_cyc, struct _word * linked_ll, unsigned int * wordAmount, struct _strings * strings, int line_number, int * existing_space, int text_line_length, WINDOW * textWin, unsigned int * awaiting_words, char *lang){
 	werase(textWin);
 
 
@@ -389,7 +332,7 @@ struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out
 		}
 	}
 
-	cyaml_err_t err = cyaml_free(config, top_schema, strings, 0); 
+	cyaml_err_t err = cyaml_free(&config, &strings_schema_top, strings, 0); 
 
 	if(err !=CYAML_OK){
 		wprintw(stdscr, "error! cannot FREE loaded words");
@@ -403,14 +346,12 @@ struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out
 	char * ext = ".yaml";
 	char *file = malloc(homedi_len+ strlen(dir) + strlen(lang) + strlen(ext) +1);
 
-	//memcpy(file, homedi, homedi_len); // languages/
 	strcpy(file, homedi);
 	strcat(file, dir);
 	strcat(file, lang); // languages/english200
 	strcat(file, ext); // languages/english200.yaml
 
-	err = cyaml_load_file(file, config,
-		       top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
+	err = cyaml_load_file(file, &config,&strings_schema_top, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
 	if(err !=CYAML_OK){
 		wprintw(stdscr, "error! cannot reload file");
 		getch();
@@ -418,7 +359,7 @@ struct _strings * restart_text(WINDOW * timeWin, WINDOW * langWin, long time_out
 	}
 
 	shuffle(strings->words_member, strings->words_member_count);
-	cyaml_save_file(file, config, top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
+	cyaml_save_file(file, &config, &strings_schema_top, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
 	if(err !=CYAML_OK){
 		wprintw(stdscr, "error! cannot SAVE file");
 		getch();
@@ -449,7 +390,6 @@ WINDOW *create_testwin(){
 	int textstartx = (COLS - width) /2;
 	WINDOW *testwin = newwin(height, width, textstarty, textstartx);
 	keypad(testwin, TRUE);
-	//box(testwin, 0, 0);
 
 	wrefresh(testwin);
 
@@ -474,14 +414,12 @@ WINDOW *create_statswin(){
 	wrefresh(statswin);
 	return statswin;
 }
-// also wrap_delch! 
 void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words,struct  _strings * strings, int in_x){
 
 	int next_word_length = 1; // + 1 for the space we are not going to count
-	// if line!=2
 	wdelch(win);
 	existing_space[line_number]++;
-	// now check if there's enough spacesto wrap
+	// Check if there's enough spacesto wrap
 	if (line_number==2) {
 		next_word_length += strlen(strings->words_member[(*awaiting_words)]);
 		if(existing_space[line_number]>=next_word_length){
@@ -535,11 +473,6 @@ void wrap_delch(WINDOW * win, int existing_space[], int line_number, int text_li
 	}
 }
 
-// check if space <nextline word+1
-// else if line 2 restore
-// else move it up
-
-
 
 void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_line_length, unsigned int * awaiting_words, char recvChar, int in_y, int in_x){
 	int text_line_index = text_line_length-1; 
@@ -547,7 +480,7 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 	bool done = false;
 	while (!done) {
 		if(existing_space[line_number]>0){ // no space means that there is no space beyond the last ' '. BECAUSE, ' ' is included in the last word.
-			winsch(win, recvChar);//normal insch.
+			winsch(win, recvChar); //normal insch.
 			existing_space[line_number]--;
 			break;
 		}
@@ -558,7 +491,7 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 
 			do{
 				getyx(win, y, x);
-				wdelch(win);//can cause problems
+				wdelch(win);
 				wmove(win, line_number, x-1);
 				existing_space[line_number]++;
 			}while((winch(win))!=KEY_SPACE);
@@ -567,7 +500,7 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 
 
 			mvwinsch(win, in_y, in_x, recvChar);
-			// do not move after it. im doing it later.
+			// Do not move after it. To be done later
 			existing_space[line_number]--;
 			break;
 		}else{
@@ -601,16 +534,16 @@ void wrap_insch(WINDOW * win, int existing_space[], int line_number, int text_li
 
 }
 
-// mistyped spaces for when he mistypes discount from eventually space
 
-unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, float * spaces, float * mistyped_spaces, int textstarty, int textstartx, long time_out_num, unsigned time_cyc, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int * wordAmount, int line_number, int * existing_space, int text_line_length, unsigned int * awaiting_words, char ** languages, const cyaml_config_t * config, const cyaml_schema_value_t * top_schema, struct _word ** dynamic_ll_ptr){
+unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, float * spaces, float * mistyped_spaces, int textstarty, int textstartx, long time_out_num, unsigned time_cyc, WINDOW * testwin, WINDOW * textWin, struct _word * dynamic_ll, struct _word * printed_ll, struct _strings * strings, unsigned int * wordAmount, int line_number, int * existing_space, int text_line_length, unsigned int * awaiting_words, char ** languages, struct _word ** dynamic_ll_ptr){
 
 
+	/* The actual loop that runs after the user started typing */
+	/* This will prompt for keys, compare them to what it should be, and then print the response -> if it's good it will be painted green, else it will be green */
 
 	werase(timeWin);
 	wprintw(timeWin, "%lu", time_out_num);
 	werase(langWin);
-	//wprintw(langWin, "%s", languages[time_cyc]);
 
 	// 1 for success 
 	// 0 for stop
@@ -622,7 +555,6 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 	timeout(1001);
 	while ((time(NULL)-start) < time_out_num) { 
 		time_remaining = time_out_num - (time(NULL)-start);
-		//timeout(1000*(time_remaining));	// relative timeout
 
 		wmove(testwin, 0, numDig(time_remaining));
 		if(winch(testwin)!=' '){// if there's a number that shouldn't be there (from previous time counter) delch it.
@@ -699,13 +631,12 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 		}
 
 		else if((*recvChar) == ' '){
-			// if next_word->dynamic_ll->string is null, he is a god and finished everthing(what about mistakes?)
 			// drop line when there's space in the end
 
 			if (relCursor<dynamic_ll->length){//he spaces in the middle of the word
 				memset((dynamic_ll->ver_arr + relCursor), NONTYPED_CHAR, (dynamic_ll->length - relCursor)); // tab to the next word, non-type next chars.
 				getyx(textWin, row, col);
-				wmove(textWin,row, col+(int)(dynamic_ll->length - relCursor));// what if it drops a line? ERROR
+				wmove(textWin,row, col+(int)(dynamic_ll->length - relCursor));
 				(*mistyped_spaces)++;
 			}else {
 				(*spaces)++;
@@ -734,7 +665,7 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 							line_number+=1;
 							wmove(textWin, line_number, 0);
 						}
-						if(existing_space[line_number]>strlen(strings->words_member[(*awaiting_words)])){// only > because if equal i can't fill it. need the user to space to move a line
+						if(existing_space[line_number]>strlen(strings->words_member[(*awaiting_words)])){// only > because if equal we can't fill it. need the user to space to move a line
 							wprintw(textWin,"%s ", strings->words_member[(*awaiting_words)]);
 							existing_space[line_number] -= strlen(strings->words_member[(*awaiting_words)])+1;
 
@@ -747,10 +678,6 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 					touchwin(testwin);
 					wrefresh(testwin);
 					wrefresh(textWin);
-					// last line, last col, typed ' '
-					// clear all, print new
-					// move first
-					// line 0
 				}else {
 
 					wmove(textWin,row+1,0);
@@ -766,7 +693,7 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 		else if (relCursor >= dynamic_ll->length){//overwording 
 			getyx(textWin, row, col);
 			if(col == (text_line_length-1-existing_space[line_number]) || dynamic_ll->overword ==5){
-				// if he is overwording by 8, stop insch'ing
+				// if he is overwording by 5, stop insch'ing
 				// if he is at the end of the line, don't allow overword
 				continue;
 			}
@@ -779,7 +706,6 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 		}
 
 		else  { //recvChar = normal key
-			// implement clearing first line, writing new line
 			if((*recvChar) == dynamic_ll->string[relCursor]){ 
 				waddch(textWin,(*recvChar) | COLOR_PAIR(GREEN));
 				dynamic_ll->ver_arr[relCursor] = CORRECT_CHAR;
@@ -806,9 +732,10 @@ unsigned start_test_loop(WINDOW * timeWin, WINDOW * langWin, int * recvChar, flo
 
 
 
-struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_to_stats,struct stats_file * stats, const cyaml_config_t * config,const cyaml_schema_value_t *stats_file_schema_top, int * recvChar){
-	// destroy other wins.
+struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_to_stats,struct stats_file * stats, int * recvChar){
 
+
+	/* This initializes the test window derivatives, as well as the stats for the test */
 	int height = LINES/2;
 	int width = COLS/1.5;
 	int textstarty = height/3;
@@ -829,20 +756,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	wmove(textWin, 0, 0);
 
 
-	// INITIALIZE words from file, shuffle them.
-	static const cyaml_schema_value_t word_entry = {
-		CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char*, 0, CYAML_UNLIMITED),
-	};
-	static const cyaml_schema_field_t top_mapping_scheme[] = { 
-		CYAML_FIELD_SEQUENCE("words", CYAML_FLAG_POINTER, struct _strings, words_member,  &word_entry, 0, CYAML_UNLIMITED),// cyaml unlimited specifies size. can be 200, 1000.
-		CYAML_FIELD_END
-	};
-
-	static const cyaml_schema_value_t top_schema = {
-		CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct _strings, top_mapping_scheme),
-	};
-
-
 	struct _strings *strings; // every strings is strings->words_member[n]
 
 
@@ -854,14 +767,13 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 
 	strcat(hd, filep);
 
-	cyaml_err_t err = cyaml_load_file(hd, config,
-				   &top_schema, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
+	cyaml_err_t err = cyaml_load_file(hd, &config,&strings_schema_top, (cyaml_data_t **)&strings, NULL); // load file onto the struct strings
 	if(err!=CYAML_OK){
 		printw("err. cannot load english 200 file");
 	}
 
 	shuffle(strings->words_member, strings->words_member_count);
-	err = cyaml_save_file(hd, config, &top_schema, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
+	err = cyaml_save_file(hd, &config, &strings_schema_top, strings,0); // after shuffle, save the shuffled words to file. that way each time he shuffles he will have a random list to previous ones.
 	//
 	if(err!=CYAML_OK){
 		printw("err. cannot save to the egnlish 200 yaml");
@@ -928,34 +840,31 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	(*recvChar) = getch();
 
 	struct _strings *protoS;
-	protoS = start_keys(&stats, stats, stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+	protoS = start_keys(&stats, stats, recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words);
 	memcpy(address_to_stats, &stats, sizeof(struct stats_file *)); // changing the global variable, stats, to point to the newly created schema.
 	
 	if(protoS == NULL)
 	{
 
-		//struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
-		//statisticsP->language=languages[time_cyc];
 		return NULL;
 		// returning null meaning no test was committed and he wants to go to stats
 	}
 
 
 	strings = protoS;
-	//delete backspace from view
-
 	unsigned result;
+
 	do{
 		touchwin(testwin);
 		wrefresh(testwin);
 		wrefresh(textWin);
-		result = start_test_loop(timeWin, langWin, recvChar, &spaces, &mistyped_spaces, textstarty, textstartx, time_out_num, time_cyc, testwin, textWin, dynamic_ll, printed_ll, strings, wordAmount, 0, existing_space, text_line_length, awaiting_words, languages, config, &top_schema, &dynamic_ll);
+		result = start_test_loop(timeWin, langWin, recvChar, &spaces, &mistyped_spaces, textstarty, textstartx, time_out_num, time_cyc, testwin, textWin, dynamic_ll, printed_ll, strings, wordAmount, 0, existing_space, text_line_length, awaiting_words, languages,  &dynamic_ll);
 		//result is 0 if reinitiate test 
 		//and 1 to finish
 
 		refresh();
 		if (result==0) {
-			strings = restart_text(timeWin, langWin,time_out_num, languages, time_cyc, printed_ll, wordAmount, strings, 0, existing_space, text_line_length, textWin, awaiting_words, languages[time_cyc], config, &top_schema);
+			strings = restart_text(timeWin, langWin,time_out_num, languages, time_cyc, printed_ll, wordAmount, strings, 0, existing_space, text_line_length, textWin, awaiting_words, languages[time_cyc]);
 			// problem could start here. some pointer becomes unvalid or misused.
 			werase(timeWin);
 			werase(langWin);
@@ -969,11 +878,9 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 			(*recvChar) = getch();
 
 			struct _strings *protoS;
-			protoS = start_keys(&stats, stats,stats_file_schema_top,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words,config, &top_schema);
+			protoS = start_keys(&stats, stats,recvChar, &time_cyc, timeopts, &time_out_num, time_out, timeWin, languages, &lang_cyc, old_lang_cyc, lang_amount, lang_diff, langWin, printed_ll, wordAmount, strings, line_number, existing_space, text_line_length , testwin,textWin,awaiting_words);
 			memcpy(address_to_stats, &stats, sizeof(struct stats_file *)); // changing the global variable, stats, to point to the newly created schema.
 			if(protoS==NULL){
-				//struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
-				//statisticsP->language=languages[time_cyc];
 				return NULL;
 			}
 			strings = protoS;
@@ -983,7 +890,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	}while(true);
 
 	timeout(-1); // cancel timeout for getch()
-	//wmove(testwin, row+1, col);
 
 
 	// initialize with spaces:
@@ -1016,14 +922,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 
 
 	}
-	// wpm: all correct chars in correct words + spaces / 5 * 60/15
-	// raw wpm: all chars + spaces /5 ) * 60/15
-	// corrects: all correct chars + spaces 
-	// acc: all corrects / all chars
-	//
-	//
-	//
-	// important to verify: when backspacing, change the ver_arr of the thing to nontyped.
 
 	struct stats_result * statisticsP = malloc(sizeof(struct stats_result)); // save to this struct the result and return it to stats_win
 
@@ -1067,9 +965,6 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	stats->times[time_cyc].tests[testsC] = statisticsP->statistics; // it appends it in the local file but not in the yaml
 	stats->times[time_cyc].tests_count++; // increment count
 
-	//stats->times[time_cyc].tests[0].wpm = 1000; // prove for saving
-	//
-	// hh dd getenv is already defined
 			char * dir = "/termtypetest/stats/";
 			char * ext = ".yaml";
 			char *file = malloc(homedi_len+ strlen(dir) + strlen(languages[lang_cyc]) + strlen(ext) +1);
@@ -1081,7 +976,7 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 			strcat(file, ext); // stats/english200.yaml
 			
 
-	err = cyaml_save_file(file, config, stats_file_schema_top, stats,0); 
+	err = cyaml_save_file(file, &config, &stats_file_schema_top, stats,0); 
 
 	if(err!=CYAML_OK){
 		printw("err dreaded, canno tsave to stats file");
@@ -1089,7 +984,7 @@ struct stats_result * spawn_test(WINDOW *testwin, struct stats_file ** address_t
 	refresh();
 
 
-	err = cyaml_free(config, &top_schema, strings, 0); 
+	err = cyaml_free(&config, &strings_schema_top, strings, 0); 
 	if(err !=CYAML_OK){
 		wprintw(stdscr, "error! cannot FREE loaded words");
 		getch();
