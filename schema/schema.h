@@ -2,6 +2,7 @@
  /* This file declares schemas for use with libcyaml */
 
  /* Declare and Define structs to be used for schema defenitions:*/
+#include <cyaml/cyaml.h>
 #ifndef CONFIG_H
 #define CONFIG_H
  /* stats yaml structs: */

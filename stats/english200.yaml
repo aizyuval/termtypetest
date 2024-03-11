@@ -1,12 +1,36 @@
 times:
 - best:
-    wpm: 0
-    rwpm: 0
-    acc: 0
+    wpm: 76
+    rwpm: 76
+    acc: 100
   tests:
   - wpm: 0
     rwpm: 0
     acc: 0
+  - wpm: 76
+    rwpm: 76
+    acc: 100
+  - wpm: 72
+    rwpm: 72.8
+    acc: 98.9011
+  - wpm: 70.4
+    rwpm: 72
+    acc: 100
+  - wpm: 71.2
+    rwpm: 72
+    acc: 100
+  - wpm: 53.6
+    rwpm: 56
+    acc: 100
+  - wpm: 53.6
+    rwpm: 63.2
+    acc: 96.2025
+  - wpm: 71.2
+    rwpm: 73.6
+    acc: 98.913
+  - wpm: 64.8
+    rwpm: 67.2
+    acc: 100
 - best:
     wpm: 0
     rwpm: 0

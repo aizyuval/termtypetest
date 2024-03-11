@@ -5,6 +5,7 @@ WORKDIR /home/user
 ENV HOME "/home/user"
 
 # install dependecies:
+RUN pacman -Syu
 RUN pacman -S ncurses libyaml curl
 
 # libcyaml
