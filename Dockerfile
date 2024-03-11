@@ -5,13 +5,12 @@ WORKDIR /home/user
 ENV HOME "/home/user"
 
 # install dependecies:
-RUN pacman -Syu
-RUN pacman -S ncurses libyaml curl
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm gcc make ncurses libyaml curl && rm -rf /var/cache/pacman/pkg/*
 
 # libcyaml
-RUN curl -O https://github.com/tlsa/libcyaml/archive/refs/tags/v1.4.1.tar.gz
+RUN curl -LO https://github.com/tlsa/libcyaml/archive/refs/tags/v1.4.1.tar.gz
 
-RUN gunzip v1.4.1.tar.gz && tar -xf v1.4.1.tar && cd v1.4.1 && make && make install && cd .. && echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && ldconfig
+RUN gunzip v1.4.1.tar.gz && tar -xf v1.4.1.tar && cd libcyaml-1.4.1 && make && make install && cd .. && echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && ldconfig
 
 # copy source files and compile
 COPY . termtypetest
