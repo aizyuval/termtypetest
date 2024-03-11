@@ -15,6 +15,18 @@ Perform a an offline typing test with useful data analays.
 
 ## Instalation:
 
+There are two ways:
+1. Docker-way:
+Build and run the image without installing any other dependencies on your machine
+```
+$ git clone https://github.com/aizyuval/termtypetest.git
+$ cd termtypetest
+$ docker build -t typetest .
+$ docker run typetest:latest
+```
+2. Source way:
+Build and run the code on your machine.
+
 ### Must Have Dependencies:
 [ncurses](https://invisible-island.net/ncurses/#downloads)
 
@@ -31,4 +43,3 @@ $ sudo make
 $ typetest
 ```
 
-then you can write 'typetest' from anywhere in the terminal.
