@@ -11,8 +11,7 @@ Perform a an offline typing test with useful data analays.
 ## Notes:
 
 * it only works on linux
-* The code is super messy. I made it super bloated than it should've been.
-
+* There are bugs
 ## Instalation:
 
 There are two ways:
